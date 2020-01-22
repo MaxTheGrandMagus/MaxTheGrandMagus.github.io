@@ -552,6 +552,10 @@ h1, h2, h3, h4, h5, h6 {
     .intro__info__job {
         font-size: 18px;
     }
+    .intro__image {
+        max-width: 100%;
+        height: 80%;
+    }
 
 .services {
     height: 600px;
