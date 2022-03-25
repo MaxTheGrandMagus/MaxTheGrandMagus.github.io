@@ -1,126 +1,324 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Chapter 1</title>
-    <link href="index.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
-  </head>
+<html>
 
-  <body>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title></title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
 
-    <header class="header">
-      <nav class="nav">
-        <a href="#" class="nav__link">Услуги</a>
-        <a href="#" class="nav__link">Портфолио</a>
-        <a href="#" class="nav__link">Стоимость</a>
-      </nav>
-      <div class="call">
-        <h3 class="call__number">+7(499)995-55-77</h3>
-        <button class="call__button">Заказать звонок</button>
-      </div>
-    </header>
+<body>
 
-    <intro class="intro">
-      <div class="intro__info">
-        <h1 class="intro__info__name">Дмитрий Алексеев</h1>
-        <h3 class="intro__info__job">Frontend-разработчик и веб-верстальщик</h3>
-        <button class="intro__button">Узнать больше</button>
-      </div>
-      <img class="intro__image" src="img/Dmitry Alekseev.png">
-    </intro>
+  <aside>
+    <div class="intro">
+      <img src="./assets/seemsgood.png" alt="avatar" />
+      <h1>Maksat Batyrov</h1>
+      <h2>Frontend Developer</h2>
+      <!-- <span class="quote">Lorem ipsum dolor sit amet consectetur adipisicing elit.</span> -->
+    </div>
 
-    <section class="services">
-      <div class="services__article">
-        <h1>Что я делаю</h1>
-      </div>
-      <div class="services__types">
-        <div class="services__types__first">
-          <center><img src="img/icons/tools-and-utensils.png"></img></center>
-          <h4 class="services__types__h">Верстка лендинг-страниц</h4> 
-          <h4 class="services__types__h">и сайтов любой сложности</h4>
-        </div>
-        <div class="services__types__second">
-          <center><img src="img/icons/responsive.png"></img></center>
-          <h4 class="services__types__h">Адаптивная верстка под все </h4>
-          <h4 class="services__types__h">браузеры и устройства</h4>
-        </div>
-        <div class="services__types__third">
-          <center><img src="img/icons/programming.png"></img></center>
-          <h4 class="services__types__h">Frontend-разработка </h4> 
-          <h4 class="services__types__h">и программирование</h4>
-        </div>
-        <div class="services__types__fourth">
-          <center><img src="img/icons/coding (1).png"></img></center>
-          <h4 class="services__types__h">Исправление и доработка</h4> 
-          <h4 class="services__types__h"> существующей верстки</h4>
-        </div>
-      </div>
-      <button class="services__button">Узнать стоимость</button>
-    </section>
+    <div class="contacts">
+      <h4 class="aside-titles">Contacts</h4>
+      <ul class="contacts__list">
+        <li class="contacts__item">
+          <svg id="email" class="contacts__item__img" width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M32 6v20c0 1.135-0.865 2-2 2h-2v-18.151l-12 8.62-12-8.62v18.151h-2c-1.135 0-2-0.865-2-2v-20c0-0.568 0.214-1.068 0.573-1.422 0.359-0.365 0.859-0.578 1.427-0.578h0.667l13.333 9.667 13.333-9.667h0.667c0.568 0 1.068 0.214 1.427 0.578 0.359 0.354 0.573 0.854 0.573 1.422z"/>
+          </svg>          
+          <div class="contacts__item__link-wrapper">
+            <span class="contacts__item__link-title aside-subtitles">Email</span>
+            <span class="contacts__item__link">veyronmclord@gmail.com</span>
+          </div>
+        </li>
+        <li class="contacts__item">
+          <svg id="linkedin" class="contacts__item__img" width="32px" height="32px" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" class="icon">
+            <path d="M880 112H144c-17.7 0-32 14.3-32 32v736c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V144c0-17.7-14.3-32-32-32zM349.3 793.7H230.6V411.9h118.7v381.8zm-59.3-434a68.8 68.8 0 1 1 68.8-68.8c-.1 38-30.9 68.8-68.8 68.8zm503.7 434H675.1V608c0-44.3-.8-101.2-61.7-101.2-61.7 0-71.2 48.2-71.2 98v188.9H423.7V411.9h113.8v52.2h1.6c15.8-30 54.5-61.7 112.3-61.7 120.2 0 142.3 79.1 142.3 181.9v209.4z"/>
+          </svg>
+          <div class="contacts__item__link-wrapper">
+            <span class="contacts__item__link-title aside-subtitles">Linkedin</span>
+            <a class="contacts__item__link" href="https://www.linkedin.com/in/maxbatyrov">maxbatyrov</a>
+          </div>
+        </li>
+        <li class="contacts__item">
+          <svg id="github" class="contacts__item__img" width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <g><path fill="none" d="M0 0h24v24H0z"/><path d="M12 2C6.475 2 2 6.475 2 12a9.994 9.994 0 0 0 6.838 9.488c.5.087.687-.213.687-.476 0-.237-.013-1.024-.013-1.862-2.512.463-3.162-.612-3.362-1.175-.113-.288-.6-1.175-1.025-1.413-.35-.187-.85-.65-.013-.662.788-.013 1.35.725 1.538 1.025.9 1.512 2.338 1.087 2.912.825.088-.65.35-1.087.638-1.337-2.225-.25-4.55-1.113-4.55-4.938 0-1.088.387-1.987 1.025-2.688-.1-.25-.45-1.275.1-2.65 0 0 .837-.262 2.75 1.026a9.28 9.28 0 0 1 2.5-.338c.85 0 1.7.112 2.5.337 1.912-1.3 2.75-1.024 2.75-1.024.55 1.375.2 2.4.1 2.65.637.7 1.025 1.587 1.025 2.687 0 3.838-2.337 4.688-4.562 4.938.362.312.675.912.675 1.85 0 1.337-.013 2.412-.013 2.75 0 .262.188.574.688.474A10.016 10.016 0 0 0 22 12c0-5.525-4.475-10-10-10z"/></g>
+          </svg>
+          <div class="contacts__item__link-wrapper">
+            <span class="contacts__item__link-title aside-subtitles">Github</span>
+            <a class="contacts__item__link" href="https://github.com/MaxTheGrandMagus">MaxTheGrandMagus</a>
+          </div>
+        </li>
+      </ul>
+    </div>
 
-    <section class="portfolio">
-      <div class="portfolio__article">
-        <h1>Примеры моих работ</h1>
-      </div>
-      <div class="portfolio__types">
-        <div class="portfolio__types__first">
-          <center><img src="img/Portfolio_1.png"></img></center>
-          <h4 class="portfolio__types__h">Сайт психолога Веры Антоновой</h4> 
-        </div>
-        <div class="portfolio__types__second">
-          <center><img src="img/Portfolio_2.png"></img></center>
-          <h4 class="portfolio__types__h">Сайт магазина детской одежды</h4>
-        </div>
-        <div class="portfolio__types__third">
-          <center><img src="img/Portfolio_3.png"></img></center>
-          <h4 class="portfolio__types__h">Сайт магазина "Рыболов"</h4> 
-        </div>
-      </div>
-      <button class="portfolio__button">Заказать проект</button>
-    </section>
+    <div class="socials">
+      <h4 class="aside-titles">Socials</h4>
+      <ul class="socials__list">
+        <li class="socials__item">
+          <svg id="telegram" class="socials__item__img" width="32px" height="32px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 0.5c-8.563 0-15.5 6.938-15.5 15.5s6.938 15.5 15.5 15.5c8.563 0 15.5-6.938 15.5-15.5s-6.938-15.5-15.5-15.5zM23.613 11.119l-2.544 11.988c-0.188 0.85-0.694 1.056-1.4 0.656l-3.875-2.856-1.869 1.8c-0.206 0.206-0.381 0.381-0.781 0.381l0.275-3.944 7.181-6.488c0.313-0.275-0.069-0.431-0.482-0.156l-8.875 5.587-3.825-1.194c-0.831-0.262-0.85-0.831 0.175-1.231l14.944-5.763c0.694-0.25 1.3 0.169 1.075 1.219z"/>
+          </svg>
+          <div class="socials__item__link-wrapper">
+            <span class="socials__item__link-title aside-subtitles">Telegram</span>
+            <a class="socials__item__link" href="https://t.me/max_batyrov">@max_batyrov</a>
+          </div>
+        </li>
+        <li class="socials__item">
+          <svg id="discord" class="socials__item__img" width="32px" height="32px" viewBox="-1.5 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m13.93 11.4c-.054.633-.582 1.127-1.224 1.127-.678 0-1.229-.55-1.229-1.229s.55-1.229 1.228-1.229c.683.029 1.225.59 1.225 1.277 0 .019 0 .037-.001.056v-.003zm-5.604-1.33c-.688.061-1.223.634-1.223 1.332s.535 1.271 1.218 1.332h.005c.683-.029 1.225-.59 1.225-1.277 0-.019 0-.037-.001-.056v.003c.001-.02.002-.043.002-.067 0-.685-.541-1.243-1.219-1.269h-.002zm12.674-7.598v21.528c-3.023-2.672-2.057-1.787-5.568-5.052l.636 2.22h-13.609c-1.359-.004-2.46-1.106-2.46-2.466 0-.002 0-.004 0-.006v-16.224c0-.002 0-.004 0-.006 0-1.36 1.101-2.462 2.459-2.466h16.081c1.359.004 2.46 1.106 2.46 2.466v.006zm-3.42 11.376c-.042-2.559-.676-4.96-1.77-7.086l.042.09c-.924-.731-2.088-1.195-3.358-1.259l-.014-.001-.168.192c1.15.312 2.15.837 3.002 1.535l-.014-.011c-1.399-.769-3.066-1.222-4.839-1.222-1.493 0-2.911.321-4.189.898l.064-.026c-.444.204-.708.35-.708.35.884-.722 1.942-1.266 3.1-1.56l.056-.012-.12-.144c-1.284.065-2.448.529-3.384 1.269l.012-.009c-1.052 2.036-1.686 4.437-1.728 6.982v.014c.799 1.111 2.088 1.826 3.543 1.826.041 0 .082-.001.123-.002h-.006s.444-.54.804-.996c-.866-.223-1.592-.727-2.093-1.406l-.007-.01c.176.124.468.284.49.3 1.209.672 2.652 1.067 4.188 1.067 1.191 0 2.326-.238 3.36-.668l-.058.021c.528-.202.982-.44 1.404-.723l-.025.016c-.526.703-1.277 1.212-2.144 1.423l-.026.005c.36.456.792.972.792.972.033.001.072.001.111.001 1.461 0 2.755-.714 3.552-1.813l.009-.013z"/></svg>
+          <div class="socials__item__link-wrapper">
+            <span class="socials__item__link-title aside-subtitles">Discord</span>
+            <span class="socials__item__link">Max Batyrov (@MaxTheGrandMagus)</span>
+          </div>
+        </li>
+      </ul>
+    </div>
 
-    <section class="bottom">
-      <div class="bottom__first">
-        <h1 class="bottom__first__h">Адаптивная вёрстка под все устройства и браузеры от 1000 рублей всего за 4 часа.*</h1>
-      </div>
-      <div class="bottom__second">
-        <h4 class="bottom__second__h">* Срок и стоимость могут отличаться от заявленных и рассчитываются индивидуально, в зависимости от сложности задач</h4>
-      </div>
-    </section>
+    <div class="languages">
+      <h4 class="aside-titles">Languages</h4>
+      <ul class="languages__list">
+        <li class="languages__item">
+          <img src="./assets/united-kingdom-rect.svg" alt="" class="languages__item__img" />
+          <div class="languages__item__lang-wrapper">
+            <span class="languages__item__lang-title">English</span>
+            <span class="languages__item__lang-level">Upper-intermediate</span>
+          </div>
+        </li>
+        <li class="languages__item">
+          <img src="./assets/russia-rect.svg" alt="" class="languages__item__img" />
+          <div class="languages__item__lang-wrapper">
+            <span class="languages__item__lang-title">Russian</span>
+            <span class="languages__item__lang-level">Proficiency</span>
+          </div>
+        </li>
+        <li class="languages__item">
+          <img src="./assets/kyrgyzstan-rect.svg" alt="" class="languages__item__img" />
+          <div class="languages__item__lang-wrapper">
+            <span class="languages__item__lang-title">Kyrgyz</span>
+            <span class="languages__item__lang-level">Native</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </aside>
 
-    <footer class="footer">
-      <nav class="footer__nav">
-        <a href="#" class="footer__nav__link">Услуги</a>
-        <a href="#" class="footer__nav__link">Портфолио</a>
-        <a href="#" class="footer__nav__link">Стоимость</a>
-      </nav>   
-      <div class="footer__contacts">
-        <div class="footer__contacts__number">
-          <img src="img/icons/call-answer (1).png">
-          <h3 class="footer__contacts__h">+7(499)995-55-77</h3>
+  <section class="main">
+    <ul class="main__container">
+      <li class="about">
+        <h2>About me:</h2>
+        <div class="about__text-container">
+          <span>Hi there 👋, My name's Max. Interested in building web apps and services which can help people. Looking for a creative and progressive company, where my skills and knowledge are utilized in the maximum possible way. I'm a curious learner, meticulous in details and a team player. I've worked for two companies as a developer for a total of one and a half years. During this time, I managed to be as an intern, developer and mentor. Developed applications, as an educational as applications that were released into production.</span>
         </div>
-        <div class="footer__contacts__email">
-          <img src="img/icons/envelope (1).png">
-          <h3 class="footer__contacts__h">dmitry@alekseev.com</h3>
+      </li>
+      <li class="skills">
+        <h2>Skills</h2>
+        <div class="skills__development">
+          <div class="development__intro">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="12" height="12" fill="#E1E7FE"/>
+              <path d="M4.66999 8.00667L2.66666 6.00333L4.66999 4L5.14166 4.47133L3.60832 6.00467L5.14166 7.538L4.67032 8.00667H4.66999ZM7.32966 8.00667L6.85866 7.53567L8.39199 6.00233L6.85866 4.469L7.32999 4L9.33332 6.00333L7.32999 8.00667H7.32966Z" fill="#516CF7"/>
+            </svg>
+            <span>Development</span>
+          </div>
+          <ul class="development__list">
+            <li class="development__item">
+              <span>HTML5</span>
+              <span>Pug</span>
+            </li>
+            <li class="development__item">
+              <span>CSS3</span>
+              <span>SCSS, LESS</span>
+            </li>
+            <li class="development__item">
+              <ul class="development__item__as-list">
+                <li>Bootstrap</li>
+                <li>Tailwind</li>
+              </ul>
+            </li>
+            <li class="development__item">
+              <ul class="development__item__as-list">
+                <li>MaterialUI</li>
+                <li>Ant Design</li>
+                <li>Element Plus</li>
+              </ul>
+            </li>
+            <li class="development__item">
+              <span>Javascript</span>
+              <span>Typescript</span>
+            </li>
+            <li class="development__item">ReactJS</li>
+            <li class="development__item">
+              <ul class="development__item__as-list">
+                <li>ContextApi</li>
+                <li>React-hook-form</li>
+                <li>Redux thunk/saga/rtk</li>
+              </ul>
+            </li>
+            <li class="development__item">
+              <span>Vue (v.2-3)</span>
+              <span>VueX</span>
+            </li>
+            <li class="development__item">
+              <span>REST API</span>
+              <span>GraphQL</span>
+            </li>
+            <li class="development__item">NodeJS</li>
+            <li class="development__item">
+              <span>ExpressJS</span>
+              <span>NestJS</span>
+            </li>
+            <li class="development__item">
+              <ul class="development__item__as-list">
+                <li>Typeorm</li>
+                <li>MongoDB</li>
+              </ul>
+            </li>
+            <li class="development__item">
+              <ul class="development__item__as-list">
+                <li>Docker</li>
+                <li>nginx</li>
+                <li>pm2</li>
+              </ul>
+            </li>
+            <li class="development__item">Git</li>
+            <li class="development__item">
+              <span>Webpack</span>
+              <span>esbuild</span>
+            </li>
+            <li class="development__item">
+              <span>eslint</span>
+              <span>pretiier</span>
+            </li>
+          </ul>
         </div>
-      </div>   
-      <div class="footer__social">
-        <button class="footer__social__button">Заказать звонок</button>
-        <div class="footer__social__icons">
-          <a href="#"><img src="img/icons/vk (1).png"></a>
-          <a href="#"><img src="img/icons/facebook-logo (1).png"></a>
-          <a href="#"><img src="img/icons/twitter-logo-silhouette.png"></a>
-          <a href="#"><img src="img/icons/instagram-social-network-logo-of-photo-camera.png"></a>
+        <div class="skills__tools">
+          <div class="tools__intro">
+            <svg width="512px" height="512px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M501.1 395.7L384 278.6c-23.1-23.1-57.6-27.6-85.4-13.9L192 158.1V96L64 0 0 64l96 128h62.1l106.6 106.6c-13.6 27.8-9.2 62.3 13.9 85.4l117.1 117.1c14.6 14.6 38.2 14.6 52.7 0l52.7-52.7c14.5-14.6 14.5-38.2 0-52.7zM331.7 225c28.3 0 54.9 11 74.9 31l19.4 19.4c15.8-6.9 30.8-16.5 43.8-29.5 37.1-37.1 49.7-89.3 37.9-136.7-2.2-9-13.5-12.1-20.1-5.5l-74.4 74.4-67.9-11.3L334 98.9l74.4-74.4c6.6-6.6 3.4-17.9-5.7-20.2-47.4-11.7-99.6.9-136.6 37.9-28.5 28.5-41.9 66.1-41.2 103.6l82.1 82.1c8.1-1.9 16.5-2.9 24.7-2.9zm-103.9 82l-56.7-56.7L18.7 402.8c-25 25-25 65.5 0 90.5s65.5 25 90.5 0l123.6-123.6c-7.6-19.9-9.9-41.6-5-62.7zM64 472c-13.2 0-24-10.8-24-24 0-13.3 10.7-24 24-24s24 10.7 24 24c0 13.2-10.7 24-24 24z"/></svg>
+            <span>Tools</span>
+          </div>
+          <ul class="tools__list">
+            <li class="tools__item">
+              <span>VS Code</span>
+              <span>WebStorm</span>
+            </li>
+            <li class="tools__item">Docker</li>
+            <li class="tools__item">Postman</li>
+            <li class="tools__item">
+              <ul class="tools__item__as-list">
+                <li>Jira</li>
+                <li>Trello</li>
+                <li>Notion</li>
+              </ul>
+            </li>
+            <li class="tools__item">Slack</li>
+            <li class="tools__item">Figma</li>
+          </ul>
         </div>
-      </div>
-    </footer>
+      </li>
+      <li class="experience">
+        <h2>Experience</h2>
+        <ul class="experience__list">
+          <li class="experience__item">
+            <div class="experience__item__company">
+              <div class="company__exp-location">
+                <span class="exp">Oct 2021 - Feb 2022  </span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M168.3 499.2C116.1 435 0 279.4 0 192C0 85.96 85.96 0 192 0C298 0 384 85.96 384 192C384 279.4 267 435 215.7 499.2C203.4 514.5 180.6 514.5 168.3 499.2H168.3zM192 256C227.3 256 256 227.3 256 192C256 156.7 227.3 128 192 128C156.7 128 128 156.7 128 192C128 227.3 156.7 256 192 256z"/></svg>
+                <span class="location"> Bishkek</span>
+              </div>
+              <div class="company__pos-logo">
+                <img src="./assets/dis_logo.jpg" alt="company logo">
+                <div class="company__pos-logo__right">
+                  <span class="position">Frontend Developer</span>
+                  <span class="company-name">Discovery Studio</span>
+                </div>
+              </div>
+            </div>
+            <span class="experience__item__description">Worked in a team of designing and developing the Ethereum web application based on smart contracts with the metamask extension</span>
+          </li>
+          <li class="experience__item">
+            <div class="experience__item__company">
+              <div class="company__exp-location">
+                <span class="exp">Jan 2020 - Jan 2021  </span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path d="M168.3 499.2C116.1 435 0 279.4 0 192C0 85.96 85.96 0 192 0C298 0 384 85.96 384 192C384 279.4 267 435 215.7 499.2C203.4 514.5 180.6 514.5 168.3 499.2H168.3zM192 256C227.3 256 256 227.3 256 192C256 156.7 227.3 128 192 128C156.7 128 128 156.7 128 192C128 227.3 156.7 256 192 256z"/></svg>
+                <span class="location"> Bishkek</span>
+              </div>
+              <div class="company__pos-logo">
+                <img src="./assets/neo_logo.png" alt="company logo">
+                <div class="company__pos-logo__right">
+                  <span class="position">Frontend Developer</span>
+                  <span class="company-name">Neobis</span>
+                </div>
+              </div>
+            </div>
+            <span class="experience__item__description">Started as an intern, took courses inside the company, developed two projects from scratch with team, also participated in teaching and mentoring students</span>
+          </li>
+        </ul>
+      </li>
+      <li class="education">
+        <h2>Education</h2>
+        <div class="education__container">
+          <h3>University</h3>
+          <div class="education__university">
+            <div class="university-info">
+              <img class="university-info__logo" src="./assets/kstu.jpg" alt="university logo" />
+              <span class="university-info__name">Kyrgyz State Technical University</span>
+            </div>
+            <span class="university-grade">BS in Computer Science</span>
+            <span class="university-years">Sep 2017 - July 2021</span>
+          </div>
+          <h3>Courses</h3>
+          <div class="education__courses">
+            <div class="course">
+              <div class="course-info">
+                <img class="course-info__logo" src="./assets/academind.png" alt="course logo" />
+                <span class="course-info__name">Academind</span>
+              </div>
+              <span class="course-grade">Understanding TypeScript </span><span style="font-style: italic; font-weight: 400">by Maximilian Schwarzmüller</span>
+              <span class="course-years">in progress</span>
+            </div>
+            <div class="course">
+              <div class="course-info">
+                <img class="course-info__logo" src="./assets/vuemastery.png" alt="course logo" />
+                <span class="course-info__name">Vuemastery</span>
+              </div>
+              <span class="course-grade">Cycle of Vue courses </span><span style="font-style: italic; font-weight: 400">by vuemastery.com</span>
+              <span class="course-years">Oct 2021</span>
+            </div>
+            <div class="course">
+              <div class="course-info">
+                <img class="course-info__logo" src="./assets/traversy.jpg" alt="course logo" />
+                <span class="course-info__name">Traversy Media</span>
+              </div>
+              <span class="course-grade">MERN eCommerce </span><span style="font-style: italic; font-weight: 400">by Brad Traversy</span>
+              <span class="course-years">Aug 2021</span>
+            </div>
+            <div class="course">
+              <div class="course-info">
+                <img class="course-info__logo" src="./assets/nestjs.svg" alt="course logo" />
+                <span class="course-info__name">NestJS</span>
+              </div>
+              <span class="course-grade">NestJS Fundamentals </span><span style="font-style: italic; font-weight: 400">by nestjs core team</span>
+              <span class="course-years">Mar 2021</span>
+            </div>
+            <div class="course">
+              <div class="course-info">
+                <img class="course-info__logo" src="./assets/udemy.png" alt="course logo" />
+                <span class="course-info__name">Udemy</span>
+              </div>
+              <span class="course-grade">React+Redux Development </span><span style="font-style: italic; font-weight: 400">by Juriy Bura</span>
+              <span class="course-years">May 2020</span>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </section>
 
-    <section class="copyright">
-      <p>© Дмитрий Алексеев, 2016-2018</p>
-    </section>
+  <script src="" async defer></script>
+</body>
 
-  </body>
 </html>
