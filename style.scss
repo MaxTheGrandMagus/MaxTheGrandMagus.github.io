@@ -1,5 +1,5 @@
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
   
 body {
@@ -8,6 +8,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   color: #2b2b2b;
   display: flex;
+  column-gap: 2rem;
   flex-direction: row;
   justify-content: space-between;
   width: 100%;
@@ -16,7 +17,6 @@ body {
 }
 
 aside {
-  width: 25%;
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -63,6 +63,14 @@ aside {
         flex-direction: row;
         align-items: center;
         margin: 10px 0;
+        .contacts__item__link {
+          display: flex;
+          color: #47516B;
+          font-family: 'DM Sans';
+          font-weight: 500;
+          text-decoration: none;
+          letter-spacing: 0.01em;
+        }
         svg {
           width: 32px;
           margin-right: 10px;
@@ -70,13 +78,6 @@ aside {
         &__link-wrapper {
           display: flex;
           flex-direction: column;
-          .contacts__item__link {
-            color: #47516B;
-            font-family: 'DM Sans';
-            font-weight: 500;
-            text-decoration: none;
-            letter-spacing: 0.01em;
-          }
         }
         &:hover {
           cursor: pointer;
@@ -118,6 +119,14 @@ aside {
         flex-direction: row;
         align-items: center;
         margin: 10px 0;
+        .socials__item__link {
+          display: flex;
+          color: #47516B;
+          font-family: 'DM Sans';
+          font-weight: 500;
+          text-decoration: none;
+          letter-spacing: 0.01em;
+        }
         svg {
           width: 32px;
           margin-right: 10px;
@@ -125,13 +134,6 @@ aside {
         &__link-wrapper {
           display: flex;
           flex-direction: column;
-          .socials__item__link {
-            color: #47516B;
-            font-family: 'DM Sans';
-            font-weight: 500;
-            text-decoration: none;
-            letter-spacing: 0.01em;
-          }
         }
         &:hover {
           cursor: pointer;
@@ -189,6 +191,12 @@ aside {
             color: #79819A;
             font-weight: 400;
           }
+          .languages__item__lang-level.english {
+            text-decoration: none;
+            &:hover {
+              text-decoration: underline;
+            }
+          }
         }
       }
     }
@@ -210,7 +218,6 @@ aside {
 }
 
 .main {
-  width: 72%;
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -304,6 +311,7 @@ aside {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
+          gap: 10px;
           font-family: 'DM Sans', sans-serif;
           font-weight: 500;
           color: rgba(81, 108, 247, 1);
@@ -315,7 +323,6 @@ aside {
             padding: 16px;
             background: #F7F9FC;
             border-radius: 4px;
-            margin: 0 8px 8px 0;
             span {
               padding: 0 8px;
               border-right: 2px solid #E2E6EE;
@@ -334,7 +341,11 @@ aside {
                 border-right: none;
               }
             }
-            
+            &:hover {
+              cursor: pointer;
+              transition: all 0.2s;
+              box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.05), 0px 6px 24px rgba(0, 0, 0, 0.04), inset 0px 1px 1px rgba(0, 0, 0, 0.04);
+            }
           }
         }
       }
@@ -369,6 +380,7 @@ aside {
           display: flex;
           align-items: center;
           flex-wrap: wrap;
+          gap: 10px;
           font-family: 'DM Sans', sans-serif;
           font-weight: 500;
           color:rgba(146, 81, 247, 1);
@@ -380,7 +392,6 @@ aside {
             padding: 16px;
             background: #F7F9FC;
             border-radius: 4px;
-            margin: 0 8px 8px 0;
             span {
               padding: 0 8px;
               border-right: 2px solid #E2E6EE;
@@ -399,7 +410,11 @@ aside {
                 border-right: none;
               }
             }
-            
+            &:hover {
+              cursor: pointer;
+              transition: all 0.2s;
+              box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.05), 0px 6px 24px rgba(0, 0, 0, 0.04), inset 0px 1px 1px rgba(0, 0, 0, 0.04);
+            }
           }
         }
       }
@@ -545,6 +560,11 @@ aside {
             font-weight: 400;
             letter-spacing: 0.01em;
             color: #79819A;
+          }
+          &:hover {
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.05), 0px 6px 24px rgba(0, 0, 0, 0.04), inset 0px 1px 1px rgba(0, 0, 0, 0.04);
           }
         }
         .education__courses {
