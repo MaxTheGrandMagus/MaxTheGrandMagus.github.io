@@ -118,7 +118,7 @@ aside .contacts ul .contacts__item .contacts__item__link {
   letter-spacing: 0.01em;
 }
 
-aside .contacts ul .contacts__item svg {
+aside .contacts ul .contacts__item svg, aside .contacts ul .contacts__item img {
   width: 32px;
   margin-right: 10px;
 }
@@ -796,6 +796,134 @@ aside .aside-subtitles {
   color: #79819A;
 }
 
+.main__container .projects__list {
+  display: -ms-grid;
+  display: grid;
+  -ms-grid-columns: (minmax(300px, 1fr))[auto-fit];
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 40px 0 0 10px;
+}
+
+.main__container .projects__list > .projects__item {
+  position: relative;
+  width: auto;
+  list-style: none;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-box-align: start;
+      -ms-flex-align: start;
+          align-items: flex-start;
+  padding: 20px;
+  background-color: #F7F9FC;
+  border-radius: 4px;
+}
+
+.main__container .projects__list > .projects__item .projects__item__link {
+  display: inherit;
+  -webkit-box-orient: inherit;
+  -webkit-box-direction: inherit;
+      -ms-flex-direction: inherit;
+          flex-direction: inherit;
+  -webkit-box-pack: inherit;
+      -ms-flex-pack: inherit;
+          justify-content: inherit;
+  -webkit-box-align: inherit;
+      -ms-flex-align: inherit;
+          align-items: inherit;
+  text-decoration: none;
+  gap: 20px;
+}
+
+.main__container .projects__list > .projects__item .projects__item__info {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+.main__container .projects__list > .projects__item .projects__item__info img {
+  width: 75px;
+  border-radius: 20%;
+  margin-bottom: 16px;
+  -webkit-filter: drop-shadow(0px 2px 6px rgba(0, 0, 0, 0.05));
+          filter: drop-shadow(0px 2px 6px rgba(0, 0, 0, 0.05));
+}
+
+.main__container .projects__list > .projects__item .projects__item__info .projects__item__info__name {
+  color: #2b2b2b;
+  margin: 0;
+}
+
+.main__container .projects__list > .projects__item .projects__item__tech h3 {
+  margin: 0 0 10px;
+  color: #47516B;
+}
+
+.main__container .projects__list > .projects__item .projects__item__tech h4 {
+  margin: 0 0 10px 0;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #79819A;
+}
+
+.main__container .projects__list > .projects__item .projects__item__tech ul {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: start;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+}
+
+.main__container .projects__list > .projects__item .projects__item__tech ul li {
+  background-color: #E1E7FE;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #516cf7;
+}
+
+.main__container .projects__list > .projects__item:hover {
+  cursor: pointer;
+  -webkit-transition: all 0.2s;
+  transition: all 0.2s;
+  -webkit-box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.05), 0px 6px 24px rgba(0, 0, 0, 0.04), inset 0px 1px 1px rgba(0, 0, 0, 0.04);
+          box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.05), 0px 6px 24px rgba(0, 0, 0, 0.04), inset 0px 1px 1px rgba(0, 0, 0, 0.04);
+}
+
 .main__container .education__container {
   display: -webkit-box;
   display: -ms-flexbox;
@@ -913,6 +1041,7 @@ aside .aside-subtitles {
 
 .main__container .education__container .education__courses .course .course-info img {
   width: 75px;
+  height: 75px;
   border-radius: 10%;
   margin-right: 16px;
   -webkit-filter: drop-shadow(0px 2px 6px rgba(0, 0, 0, 0.05));
