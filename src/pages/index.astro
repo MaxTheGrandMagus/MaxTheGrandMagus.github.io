@@ -1,0 +1,1126 @@
+---
+// Sidebar CV: a modern two-column résumé on an A4 sheet. A deep-coloured band holds the details
+// and skills, the white column holds the story. Prints to an A4 PDF with the band bleeding off the page edge.
+import '@fontsource-variable/figtree';
+import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile.js';
+import { results } from '../data/results.js';
+import { experience } from '../data/experience.js';
+import { skills } from '../data/skills.js';
+import { formatMonth, formatDuration, monthsBetween, yearsSince } from '../lib/dates.js';
+
+const years = yearsSince(profile.careerStart);
+
+/** A hero field's value with `{years}` filled in. */
+const field = (/** @type {string} */ label) =>
+  profile.fields.find((f) => f.label === label)?.value.replaceAll('{years}', String(years)) ?? '';
+
+/** "a, b, c" → "a, b and c", so a comma list reads as prose. */
+const andList = (/** @type {string} */ s) => s.replace(/,\s*([^,]+)$/, ' and $1');
+
+/** Splits text around hyphenated words ("form-filling"), which render unbroken: odd parts are those words. */
+const keepHyphens = (/** @type {string} */ s) =>
+  s.split(/(\S+-\S+)/).map((text, i) => ({ text, nowrap: i % 2 === 1 }));
+
+const slug = (/** @type {string} */ s) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/* ——— Sidebar ——— */
+
+// The avatar shows initials: the first letters of the first and last names.
+const nameParts = profile.name.trim().split(/\s+/);
+const initials = (
+  nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}` : profile.name.slice(0, 2)
+).toUpperCase();
+
+// Contacts are shown as readable addresses, because on paper the text is all that is left of a link.
+const readable = (/** @type {string} */ href) =>
+  href.startsWith('mailto:') ? href.slice(7) : href.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+const contacts = ['Email', 'Telegram', 'LinkedIn', 'GitHub'].flatMap((label) => {
+  const link = profile.links.find((l) => l.label === label);
+  return link ? [{ ...link, text: readable(link.href) }] : [];
+});
+const email = contacts.find((c) => c.label === 'Email')?.text;
+
+// UTC offset of the profile's time zone: "GMT+6" → "UTC+6".
+const utc = (() => {
+  try {
+    const name = new Intl.DateTimeFormat('en', { timeZone: profile.timezone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName')?.value;
+    return name ? name.replace('GMT', 'UTC') : '';
+  } catch {
+    return '';
+  }
+})();
+
+// Plain-text rows after the links, labelled with the profile's own field names.
+const facts = ['Based in', 'Works'].flatMap((label) => {
+  const value = field(label);
+  if (!value) return [];
+  return [{ label, text: label === 'Based in' && utc ? `${value} (${utc})` : value }];
+});
+
+// Languages before education, as on most CVs; anything added later follows in data order.
+// Each comma-separated part gets its own line; commas inside parentheses stay put.
+const bgOrder = ['Languages', 'Education'];
+const bgRank = (/** @type {string} */ label) => {
+  const i = bgOrder.indexOf(label);
+  return i === -1 ? bgOrder.length : i;
+};
+const background = [...profile.background]
+  .sort((a, b) => bgRank(a.label) - bgRank(b.label))
+  .map((b) => ({ ...b, id: `bg-${slug(b.label)}`, lines: b.value.split(/,\s*(?![^()]*\))/) }));
+
+/* ——— Main column ——— */
+
+// The profile is composed from data only: years and stack, domains, then the strongest result.
+// "6+ years with React, Next.js and TypeScript, building products in HRTech, … and PropTech."
+const domains = field('Domains');
+const lead = [field('Experience'), domains && `building products in ${andList(domains)}`].filter(Boolean).join(', ');
+// "Autofill engine at HirePilot: 2 min instead of 25 min to fill in a job application, …"
+const top = results[0];
+const topSentence =
+  top &&
+  `${top.project ? `${top.project} at ${top.company}` : `At ${top.company}`}: ` +
+    `${top.after}${top.before ? ` instead of ${top.before}` : ''} ${top.what}.`;
+const sentences = [lead && `${lead.charAt(0).toUpperCase()}${lead.slice(1)}.`, topSentence].filter(Boolean);
+const profileText = keepHyphens(sentences.join(' '));
+
+const rows = results.map((r) => ({ ...r, whatParts: keepHyphens(r.what) }));
+
+const jobs = experience.map((job) => ({
+  ...job,
+  duration: formatDuration(monthsBetween(job.start, job.end)),
+  summaryParts: keepHyphens(job.summary),
+  points: job.highlights.slice(0, 4).map(keepHyphens),
+}));
+---
+
+<Base>
+  <Fragment slot="head">
+    <meta name="theme-color" content="#e9ecf1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)" />
+  </Fragment>
+
+  <header class="bar">
+    <p class="bar-title">{profile.name}, CV</p>
+    <div class="bar-actions">
+      <button type="button" class="act" data-print><span class="act-label">Print or save as PDF</span></button>
+      {
+        profile.cv && (
+          <a class="act" href={profile.cv} download>
+            <span class="act-label">Download original PDF</span>
+          </a>
+        )
+      }
+      {
+        email && (
+          <button type="button" class="act" data-copy={email}>
+            <span class="act-label act-idle">Copy email</span>
+            <span class="act-label act-done">Email copied</span>
+          </button>
+        )
+      }
+    </div>
+    <p class="sr-only" role="status" aria-live="polite" data-status></p>
+  </header>
+
+  <main class="sheet">
+    <div class="mark" aria-hidden="true">
+      <span class="avatar">{initials}</span>
+    </div>
+
+    <header class="head">
+      <h1>{profile.name}</h1>
+      <p class="role">{profile.role}</p>
+    </header>
+
+    <div class="side">
+      <section class="s-sec s-contact" aria-labelledby="contact-title">
+        <h2 id="contact-title" class="s-title">Contact</h2>
+        <address class="contact">
+          <dl class="pairs">
+            {
+              contacts.map((c) => (
+                <div class="pair">
+                  <dt>{c.label}</dt>
+                  <dd>
+                    <a href={c.href}>{c.text}</a>
+                  </dd>
+                </div>
+              ))
+            }
+            {
+              facts.map((f) => (
+                <div class="pair">
+                  <dt>{f.label}</dt>
+                  <dd>{f.text}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </address>
+      </section>
+
+      <section class="s-sec s-skills" aria-labelledby="skills-title">
+        <h2 id="skills-title" class="s-title">Skills</h2>
+        <dl class="skills">
+          {
+            skills.map((s) => (
+              <div class="skill">
+                <dt>{s.group}</dt>
+                <dd>
+                  {s.items.map((item, i) => (
+                    <>
+                      <span class="nowrap">{item}</span>
+                      {i < s.items.length - 1 && ', '}
+                    </>
+                  ))}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+      </section>
+
+      {
+        background.map((b) => (
+          <section class="s-sec s-brief" aria-labelledby={b.id}>
+            <h2 id={b.id} class="s-title">
+              {b.label}
+            </h2>
+            <p class="brief">
+              {b.lines.map((line, i) => (
+                <>
+                  {i > 0 && <span class="sr-only">, </span>}
+                  <span class="brief-line">{line}</span>
+                </>
+              ))}
+            </p>
+          </section>
+        ))
+      }
+    </div>
+
+    <div class="body">
+      {
+        sentences.length > 0 && (
+          <section class="m-sec" aria-labelledby="profile-title">
+            <h2 id="profile-title" class="m-title">Profile</h2>
+            <p class="prose">{profileText.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}</p>
+          </section>
+        )
+      }
+
+      {
+        rows.length > 0 && (
+          <section class="m-sec" aria-labelledby="results-title">
+            <h2 id="results-title" class="m-title">Key results</h2>
+            <ul class="results" role="list">
+              {rows.map((r) => (
+                <li class="result">
+                  <p class="r-nums num">
+                    <strong class="r-after">{r.after}</strong>
+                    {r.before && (
+                      <s class="r-before">
+                        <span class="sr-only">instead of </span>
+                        {r.before}
+                      </s>
+                    )}
+                  </p>
+                  <p class="r-text">
+                    <span class="r-what">
+                      {r.whatParts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}
+                    </span>
+                    <span class="sr-only">, </span>
+                    <span class="r-co">{r.company}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+
+      <section class="m-sec" aria-labelledby="experience-title">
+        <h2 id="experience-title" class="m-title">Experience</h2>
+        <ol class="jobs" role="list">
+          {
+            jobs.map((job) => (
+              <li class="job">
+                <div class="job-head">
+                  <h3 class="job-title">
+                    {job.role}, <span class="job-co">{job.company}</span>
+                  </h3>
+                  <p class="job-when num">
+                    <time datetime={job.start}>{formatMonth(job.start)}</time>
+                    <span aria-hidden="true">{' – '}</span>
+                    <span class="sr-only">{' to '}</span>
+                    {job.end ? <time datetime={job.end}>{formatMonth(job.end)}</time> : 'Present'}
+                  </p>
+                  <p class="job-dur num">
+                    <span class="job-sep">, </span>
+                    {job.duration}
+                  </p>
+                  {job.location && <p class="job-where">{job.location}</p>}
+                </div>
+                <p class="job-summary">
+                  {job.summaryParts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}
+                </p>
+                {job.points.length > 0 && (
+                  <ul class="job-points">
+                    {job.points.map((parts) => (
+                      <li>{parts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))
+          }
+        </ol>
+      </section>
+    </div>
+  </main>
+</Base>
+
+<script>
+  document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+
+  const copy = /** @type {HTMLButtonElement | null} */ (document.querySelector('[data-copy]'));
+  const status = document.querySelector('[data-status]');
+
+  if (copy) {
+    if (!navigator.clipboard?.writeText) {
+      copy.hidden = true;
+    } else {
+      let timer = 0;
+      const announce = (/** @type {string} */ text) => {
+        if (!status) return;
+        status.textContent = '';
+        window.setTimeout(() => (status.textContent = text), 50);
+      };
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(copy.dataset.copy ?? '');
+          copy.dataset.done = '';
+          announce('Email copied to clipboard');
+          window.clearTimeout(timer);
+          timer = window.setTimeout(() => {
+            delete copy.dataset.done;
+            if (status) status.textContent = '';
+          }, 2000);
+        } catch {
+          announce('Could not copy the email');
+        }
+      });
+    }
+  }
+</script>
+
+<style is:global>
+  :root {
+    --desk: #e9ecf1;
+    --paper: #ffffff;
+    --side: #10263a;
+    --on-side: #eef2f7;
+    --on-side-muted: #a9b6c6;
+    --ink: #18202a;
+    --muted: #5b6573;
+    --rule: #e1e5ea;
+    --accent: #1e7bd8;
+    /* #1e7bd8 is 4.3:1 on white and 3.6:1 on the desk, under AA for small text, so accent-coloured
+       text on paper or desk takes one step deeper. Rules, dots and the avatar keep the accent itself. */
+    --accent-ink: #1868b8;
+    /* Accent-coloured text on the band (the role, on narrow screens). */
+    --accent-on-side: #5ba6f0;
+    --on-accent: #ffffff;
+    --shadow: 0 1px 2px rgb(16 38 58 / 0.06), 0 12px 32px rgb(16 38 58 / 0.08);
+    --font: 'Figtree Variable', system-ui, sans-serif;
+    --side-w: 70mm;
+    color-scheme: light dark;
+  }
+
+  /* Screen only: print always gets the light tokens. */
+  @media screen and (prefers-color-scheme: dark) {
+    :root {
+      --desk: #0f1216;
+      --paper: #171a1f;
+      --side: #0c1b29;
+      --on-side: #e3e9f0;
+      --on-side-muted: #93a2b4;
+      --ink: #e8ecf1;
+      --muted: #9ca6b3;
+      --rule: #2a2f37;
+      --accent: #5ba6f0;
+      --accent-ink: #5ba6f0;
+      --accent-on-side: #5ba6f0;
+      /* White on the light dark-mode accent is 2.6:1, so the initials take the band colour instead. */
+      --on-accent: #0c1b29;
+      --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.32);
+    }
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--ink);
+    font: 400 1rem/1.5 var(--font);
+    font-kerning: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  dl,
+  dd,
+  address {
+    margin: 0;
+  }
+
+  ul,
+  ol {
+    padding: 0;
+    list-style: none;
+  }
+
+  address {
+    font-style: normal;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nowrap {
+    white-space: nowrap;
+  }
+
+  /* ——— Toolbar: outside the sheet, never printed ——— */
+
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0 24px;
+    width: 210mm;
+    max-width: calc(100% - 32px);
+    margin: 0 auto;
+    padding-top: 14px;
+    font-size: 0.875rem;
+  }
+
+  .bar-title {
+    color: var(--muted);
+  }
+
+  .bar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 22px;
+  }
+
+  /* Labels sit at the start of the cell, so an action that wraps to a new line starts flush; on the
+     desktop bar they sit at the end, so the last action ends flush with the sheet. */
+  .act {
+    display: inline-grid;
+    justify-items: start;
+    margin-inline: -4px;
+    padding: 8px 4px;
+    border: 0;
+    background: none;
+    color: var(--accent-ink);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .act-label {
+    grid-area: 1 / 1;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  }
+
+  @media (width >= 820px) {
+    .act {
+      justify-items: end;
+    }
+  }
+
+  .act:hover .act-label {
+    text-decoration-color: currentColor;
+  }
+
+  /* Both labels share one cell, so the button keeps its width when the label swaps. */
+  .act-done,
+  .act[data-done] .act-idle {
+    visibility: hidden;
+  }
+
+  .act[data-done] .act-done {
+    visibility: visible;
+  }
+
+  @media (scripting: none) {
+    [data-print],
+    [data-copy] {
+      display: none;
+    }
+  }
+
+  /* ——— The sheet: band on the left, story on the right ——— */
+
+  /* The avatar and the name share the first row, so "Contact" and "Profile" start on one line below it.
+     The band is two cells (avatar, then details) that stretch with their rows to the bottom of the sheet. */
+  .sheet {
+    --pad-top: 14mm;
+    --pad-side: 10mm;
+    --pad-main: 14mm;
+    --head-gap: 8mm;
+    --sec-gap: 7mm;
+    display: grid;
+    grid-template-columns: var(--side-w) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'mark head'
+      'side body';
+    width: 210mm;
+    max-width: calc(100% - 32px);
+    min-height: 297mm;
+    margin: 24px auto 64px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .mark {
+    grid-area: mark;
+    padding: var(--pad-top) var(--pad-side) var(--head-gap);
+    background: var(--side);
+  }
+
+  /* Positioned, so it paints above the band cell that overlaps it in print. */
+  .avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
+  .head {
+    grid-area: head;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--pad-top) var(--pad-main) var(--head-gap);
+  }
+
+  h1 {
+    font-size: 34px;
+    font-weight: 750;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .role {
+    margin-top: 4px;
+    color: var(--accent-ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .side {
+    grid-area: side;
+    padding: 0 var(--pad-side) var(--pad-top);
+    background: var(--side);
+    color: var(--on-side);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .body {
+    grid-area: body;
+    padding: 0 var(--pad-main) var(--pad-top);
+  }
+
+  /* Both column titles sit on a 20px line with their rule 5px below, so the first pair lines up. */
+  .s-title,
+  .m-title {
+    line-height: 20px;
+  }
+
+  .s-title {
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .s-title::after {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 2px;
+    margin-top: 5px;
+    border-radius: 1px;
+    background: var(--accent);
+  }
+
+  .m-title {
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 15px;
+    font-weight: 750;
+    letter-spacing: -0.005em;
+  }
+
+  .s-sec + .s-sec,
+  .m-sec + .m-sec {
+    margin-top: var(--sec-gap);
+  }
+
+  /* ——— Sidebar content: small muted labels over readable values ——— */
+
+  .pairs,
+  .skills {
+    display: grid;
+    row-gap: 8px;
+    margin-top: 11px;
+  }
+
+  .pair dt,
+  .skill dt {
+    color: var(--on-side-muted);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .pair dd {
+    overflow-wrap: anywhere;
+  }
+
+  .skill dd {
+    text-wrap: pretty;
+  }
+
+  .side a {
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.22em;
+    text-decoration-color: color-mix(in srgb, currentColor 32%, transparent);
+  }
+
+  .side a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .side :focus-visible {
+    outline-color: var(--on-side);
+  }
+
+  .brief {
+    margin-top: 11px;
+  }
+
+  .brief-line {
+    display: block;
+  }
+
+  /* ——— Main column ——— */
+
+  .prose {
+    max-width: 75ch;
+    margin-top: 10px;
+    text-wrap: pretty;
+  }
+
+  /* Key results: the new number large, the old one struck through beneath it, then what changed. */
+  .results {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 18px;
+    row-gap: 11px;
+    margin-top: 12px;
+  }
+
+  .result {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+    break-inside: avoid;
+  }
+
+  .r-nums {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .r-after {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .r-before {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+    text-decoration-thickness: 1px;
+  }
+
+  .r-what,
+  .r-co {
+    display: block;
+  }
+
+  .r-what {
+    max-width: 75ch;
+    text-wrap: pretty;
+  }
+
+  .r-co {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* Experience: a hairline rail on the left with a dot at each job. Each job draws the rail from its own
+     dot down to the next one, so the line starts and ends on a dot. */
+  .jobs {
+    --title-lh: 19px;
+    --dot: 7px;
+    margin-top: 14px;
+  }
+
+  .job {
+    position: relative;
+    padding-left: 20px;
+    padding-bottom: 16px;
+    break-inside: avoid;
+  }
+
+  .job:last-child {
+    padding-bottom: 0;
+  }
+
+  /* The rail comes first in paint order, so the dot sits on top of it. */
+  .job:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--title-lh) / 2);
+    bottom: calc(var(--title-lh) / -2);
+    left: calc(var(--dot) / 2 - 0.5px);
+    width: 1px;
+    background: var(--rule);
+  }
+
+  .job::after {
+    content: '';
+    position: absolute;
+    top: calc(var(--title-lh) / 2 - var(--dot) / 2);
+    left: 0;
+    width: var(--dot);
+    height: var(--dot);
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .job-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 14px;
+    align-items: baseline;
+  }
+
+  .job-title {
+    grid-area: 1 / 1;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: var(--title-lh);
+  }
+
+  .job-co {
+    color: var(--accent-ink);
+  }
+
+  .job-when,
+  .job-dur,
+  .job-where {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .job-when {
+    grid-area: 1 / 2;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .job-where {
+    grid-area: 2 / 1;
+  }
+
+  .job-dur {
+    grid-area: 2 / 2;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Only phones set the duration on the dates line, after a comma. */
+  .job-sep {
+    display: none;
+  }
+
+  .job-summary {
+    max-width: 75ch;
+    margin-top: 5px;
+    color: var(--muted);
+    text-wrap: pretty;
+  }
+
+  .job-points {
+    display: grid;
+    row-gap: 2px;
+    max-width: 75ch;
+    margin-top: 6px;
+  }
+
+  .job-points li {
+    position: relative;
+    padding-left: 13px;
+    text-wrap: pretty;
+  }
+
+  .job-points li::before {
+    content: '';
+    position: absolute;
+    top: calc(0.75em - 2px);
+    left: 1px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  /* ——— Narrow screens: full-bleed, and the band moves above the story ——— */
+
+  /* The name joins the avatar at the top of the band, so the first screen shows who this is.
+     Gutters are 16px on phones and centre a 42rem measure on tablets. */
+  @media screen and (width < 820px) {
+    .bar {
+      width: auto;
+      max-width: none;
+      padding-inline: max(16px, (100% - 42rem) / 2);
+      padding-top: 6px;
+      padding-bottom: 6px;
+      font-size: 0.8125rem;
+    }
+
+    .bar-actions {
+      gap: 0 16px;
+    }
+
+    .sheet {
+      --gutter: max(16px, (100cqi - 42rem) / 2);
+      --sec-gap: 30px;
+      container-type: inline-size;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-rows: none;
+      grid-template-areas:
+        'mark head'
+        'side side'
+        'body body';
+      width: auto;
+      max-width: none;
+      min-height: 0;
+      margin: 0;
+      box-shadow: none;
+      font-size: 15px;
+    }
+
+    .mark {
+      padding: 22px 14px 0 var(--gutter);
+    }
+
+    .head {
+      padding: 22px var(--gutter) 0 0;
+      background: var(--side);
+      color: var(--on-side);
+    }
+
+    h1 {
+      font-size: 27px;
+    }
+
+    .role {
+      margin-top: 2px;
+      color: var(--accent-on-side);
+      font-size: 15px;
+    }
+
+    .side {
+      padding: 26px var(--gutter) 30px;
+      font-size: 14px;
+    }
+
+    .body {
+      padding: 28px var(--gutter) 56px;
+    }
+
+    .s-title {
+      font-size: 14px;
+    }
+
+    .m-title {
+      font-size: 17px;
+    }
+
+    .pair dt,
+    .skill dt {
+      font-size: 12.5px;
+    }
+
+    .pairs,
+    .skills {
+      row-gap: 10px;
+    }
+
+    .jobs {
+      --title-lh: 21px;
+    }
+
+    .job {
+      padding-bottom: 26px;
+    }
+
+    .job-title {
+      font-size: 15px;
+    }
+
+    .job-when,
+    .job-dur,
+    .job-where,
+    .r-co,
+    .r-before {
+      font-size: 13.5px;
+    }
+
+    .r-after {
+      font-size: 21px;
+    }
+
+    .results {
+      row-gap: 14px;
+    }
+  }
+
+  /* Tablets: the band spreads into two columns, with languages and education side by side. */
+  @media screen and (560px <= width < 820px) {
+    .side {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--sec-gap) 32px;
+    }
+
+    .s-contact,
+    .s-skills {
+      grid-column: 1 / -1;
+    }
+
+    .side .s-sec + .s-sec {
+      margin-top: 0;
+    }
+
+    .pairs,
+    .skills {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 32px;
+    }
+  }
+
+  /* Phones: contact rows become label and value side by side. */
+  @media screen and (width < 560px) {
+    .pair {
+      display: grid;
+      grid-template-columns: 5.25rem minmax(0, 1fr);
+      column-gap: 12px;
+      align-items: baseline;
+    }
+
+    /* Title, then "Nov 2025 – Present, 1 yr", then the location. Flex drops the source whitespace
+       between the dates and the comma. */
+    .job-head {
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: 0;
+    }
+
+    .job-title,
+    .job-where {
+      flex-basis: 100%;
+    }
+
+    .job-sep {
+      display: inline;
+    }
+  }
+
+  /* No motion on this page; this guards against anything added later. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* ——— Print: the sheet becomes the pages, and the band bleeds off the edge ——— */
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  @media print {
+    :root {
+      --desk: #ffffff;
+      --paper: #ffffff;
+      --side: #10263a;
+      --on-side: #eef2f7;
+      --on-side-muted: #a9b6c6;
+      --ink: #18202a;
+      --muted: #5b6573;
+      --rule: #e1e5ea;
+      --accent: #1e7bd8;
+      --accent-ink: #1868b8;
+      --on-accent: #ffffff;
+      color-scheme: light;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    body {
+      background: #ffffff;
+    }
+
+    .bar,
+    .sr-only {
+      display: none !important;
+    }
+
+    .sheet {
+      width: 210mm;
+      max-width: none;
+      min-height: 0;
+      margin: 0;
+      background: none;
+      box-shadow: none;
+    }
+
+    /* With no page margin, each page's top and bottom space is the columns' own padding, which clone repeats
+       on every page. The negative margin cancels that padding on the first page, below the name. */
+    .side,
+    .body {
+      margin-top: calc(-1 * var(--pad-top));
+      padding-top: var(--pad-top);
+      -webkit-box-decoration-break: clone;
+      box-decoration-break: clone;
+    }
+
+    /* The band cells end with the content, so a fixed box paints the band too: fixed boxes repeat on every
+       printed page, which takes the band to the bottom of the last page. */
+    .sheet::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: -1;
+      width: var(--side-w);
+      background: var(--side);
+    }
+
+    .sheet a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    h2,
+    h3,
+    .job-head {
+      break-after: avoid;
+    }
+
+    .job,
+    .result,
+    .pair,
+    .skill,
+    .s-brief,
+    .head {
+      break-inside: avoid;
+    }
+  }
+</style>
