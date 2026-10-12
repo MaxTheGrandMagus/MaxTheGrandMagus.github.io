@@ -97,12 +97,39 @@ const year = new Date().getFullYear();
   <Fragment slot="head">
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
+    <!-- Applies the visitor's saved light/dark choice before the first paint, so the page never flashes. -->
+    <script is:inline>
+      try {
+        const scheme = localStorage.getItem('scheme');
+        if (scheme === 'light' || scheme === 'dark') document.documentElement.dataset.scheme = scheme;
+      } catch {}
+    </script>
   </Fragment>
 
   <div class="page">
     <div class="side">
       <header class="profile">
-        <div class="avatar" aria-hidden="true">{initials}</div>
+        <div class="profile-top">
+          <div class="avatar" aria-hidden="true">{initials}</div>
+          <button
+            type="button"
+            class="scheme-toggle"
+            aria-label="Dark theme"
+            aria-pressed="false"
+            data-scheme-toggle
+            hidden
+          >
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path
+                d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"
+              ></path>
+            </svg>
+          </button>
+        </div>
         <h1>{profile.name}</h1>
         <p class="role">{profile.role}</p>
         {
@@ -368,6 +395,42 @@ const year = new Date().getFullYear();
 <script>
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+  /* ——— Light/dark switch: follows the system until the visitor picks a side; the choice is remembered ——— */
+
+  const schemeToggle = document.querySelector('[data-scheme-toggle]');
+  if (schemeToggle instanceof HTMLButtonElement) {
+    const root = document.documentElement;
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const themeColors = [...document.querySelectorAll('meta[name="theme-color"]')];
+    const current = () => root.dataset.scheme ?? (systemDark.matches ? 'dark' : 'light');
+
+    const sync = () => {
+      const dark = current() === 'dark';
+      schemeToggle.setAttribute('aria-pressed', String(dark));
+      schemeToggle.title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+      // After a manual pick, the browser bar takes the page's background too.
+      if (root.dataset.scheme) {
+        const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+        themeColors.forEach((meta) => meta.setAttribute('content', bg));
+      }
+    };
+
+    schemeToggle.addEventListener('click', () => {
+      const next = current() === 'dark' ? 'light' : 'dark';
+      root.dataset.scheme = next;
+      try {
+        localStorage.setItem('scheme', next);
+      } catch {
+        // Private mode: the switch still works for this visit.
+      }
+      sync();
+    });
+
+    systemDark.addEventListener('change', sync);
+    schemeToggle.hidden = false;
+    sync();
+  }
+
   /* ——— Clock: the live time in the profile's time zone, in front of the server-rendered UTC offset ——— */
 
   const clock = /** @type {HTMLElement | null} */ (document.querySelector('[data-clock]'));
@@ -553,9 +616,10 @@ const year = new Date().getFullYear();
     color-scheme: light dark;
   }
 
-  /* Screen only, so a printout always gets the light tokens. */
+  /* Dark tokens come from the system setting unless the visitor picked light with the switch, or from the
+     switch itself (html[data-scheme]). Screen only, so a printout always gets the light tokens. */
   @media screen and (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-scheme='light']) {
       --bg: #0d0e10;
       --panel: #141518;
       --ink: #edeef0;
@@ -564,6 +628,23 @@ const year = new Date().getFullYear();
       --accent: #6ea0ff;
       --accent-soft: #16213a;
     }
+  }
+
+  @media screen {
+    :root[data-scheme='dark'] {
+      --bg: #0d0e10;
+      --panel: #141518;
+      --ink: #edeef0;
+      --muted: #9aa0aa;
+      --rule: #24262b;
+      --accent: #6ea0ff;
+      --accent-soft: #16213a;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-scheme='light'] {
+    color-scheme: light;
   }
 
   *,
@@ -664,6 +745,53 @@ const year = new Date().getFullYear();
   }
 
   /* ——— Profile ——— */
+
+  .profile-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  /* Light/dark switch: the moon offers dark, the sun offers light. */
+  .scheme-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background-color 0.15s,
+      border-color 0.15s;
+  }
+
+  .scheme-toggle:hover {
+    border-color: color-mix(in srgb, var(--muted) 45%, var(--rule));
+    background: var(--panel);
+    color: var(--ink);
+  }
+
+  .scheme-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .scheme-toggle[aria-pressed='true'] .icon-moon,
+  .scheme-toggle:not([aria-pressed='true']) .icon-sun {
+    display: none;
+  }
 
   .avatar {
     display: grid;
@@ -1456,7 +1584,8 @@ const year = new Date().getFullYear();
     .spy,
     .actions,
     .social,
-    .copy {
+    .copy,
+    .scheme-toggle {
       display: none !important;
     }
 
