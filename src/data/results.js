@@ -1,16 +1,15 @@
 // @ts-check
 
 /**
- * Блок «Key results»: самые сильные результаты в формате «стало / было».
- * `after` выводится крупно, `before` — зачёркнутым под ним. Если `before` нет — только `after`.
- * Первый результат ещё и попадает в абзац «Profile».
+ * Раздел «Results»: самые сильные результаты в формате «было / стало».
+ * `before` выводится мелко и зачёркнутым, `after` — крупно. Если `before` нет — только `after`.
  *
  * @typedef {object} Result
  * @property {string} [before]
  * @property {string} after
  * @property {string} what     Что изменилось — продолжает фразу после цифры.
- * @property {string} company  Выводится под описанием.
- * @property {string} [project] Используется в абзаце «Profile» для первого результата.
+ * @property {string} company  Выводится внизу: «Autofill engine at HirePilot».
+ * @property {string} [project] Название проекта перед «at Company».
  */
 
 /** @type {Result[]} */

@@ -10,11 +10,12 @@
  * @property {string} role
  * @property {string} start
  * @property {string | null} end
- * @property {string} [location]
- * @property {string} [url]          Ссылка на продукт или компанию.
- * @property {string} summary        Одно-два предложения о продукте — видны всегда.
- * @property {string[]} [stack]      Ключевые технологии, выводятся строкой под описанием.
- * @property {string[]} highlights   Достижения — раскрываются по клику.
+ * @property {string} [location]   Хранится в данных; в текущем дизайне не выводится.
+ * @property {string} [url]          Ссылка на продукт или компанию; в текущем дизайне не выводится.
+ * @property {string} summary        Одно-два предложения о продукте: в блоке «Now» для текущей работы
+ *                                   и в раскрывающейся строке опыта.
+ * @property {string[]} [stack]      Ключевые технологии — чипами в раскрывающейся строке.
+ * @property {string[]} highlights   Достижения — все, в раскрывающейся строке.
  */
 
 /** @type {Job[]} */

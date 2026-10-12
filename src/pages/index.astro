@@ -1,7 +1,7 @@
 ---
-// Sidebar CV: a modern two-column résumé on an A4 sheet. A deep-coloured band holds the details
-// and skills, the white column holds the story. Prints to an A4 PDF with the band bleeding off the page edge.
-import '@fontsource-variable/figtree';
+// Split: a sticky profile column on the left, the CV on the right.
+// The section list in the left column follows the reader: that scrollspy is the page's one signature detail.
+import '@fontsource-variable/dm-sans/opsz.css';
 import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile.js';
 import { results } from '../data/results.js';
@@ -9,46 +9,31 @@ import { experience } from '../data/experience.js';
 import { skills } from '../data/skills.js';
 import { formatMonth, formatDuration, monthsBetween, yearsSince } from '../lib/dates.js';
 
+const capitalize = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Keeps hyphenated words such as "form-filling" on one line: the parts at odd indexes get a nowrap span.
+const keepHyphens = (/** @type {string} */ s) => s.split(/(\S+-\S+)/);
+
+/* ——— Profile ——— */
+
 const years = yearsSince(profile.careerStart);
 
 /** A hero field's value with `{years}` filled in. */
 const field = (/** @type {string} */ label) =>
   profile.fields.find((f) => f.label === label)?.value.replaceAll('{years}', String(years)) ?? '';
 
-/** "a, b, c" → "a, b and c", so a comma list reads as prose. */
-const andList = (/** @type {string} */ s) => s.replace(/,\s*([^,]+)$/, ' and $1');
+// "Maksat Batyrov" → "MB": the first letters of the first and the last word.
+const words = profile.name.trim().split(/\s+/);
+const initials = [words[0], words.length > 1 ? words[words.length - 1] : '']
+  .map((w) => w.charAt(0))
+  .join('')
+  .toUpperCase();
 
-/** Splits text around hyphenated words ("form-filling"), which render unbroken: odd parts are those words. */
-const keepHyphens = (/** @type {string} */ s) =>
-  s.split(/(\S+-\S+)/).map((text, i) => ({ text, nowrap: i % 2 === 1 }));
-
-const slug = (/** @type {string} */ s) =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-
-/* ——— Sidebar ——— */
-
-// The avatar shows initials: the first letters of the first and last names.
-const nameParts = profile.name.trim().split(/\s+/);
-const initials = (
-  nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}` : profile.name.slice(0, 2)
-).toUpperCase();
-
-// Contacts are shown as readable addresses, because on paper the text is all that is left of a link.
-const readable = (/** @type {string} */ href) =>
-  href.startsWith('mailto:') ? href.slice(7) : href.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-const contacts = ['Email', 'Telegram', 'LinkedIn', 'GitHub'].flatMap((label) => {
-  const link = profile.links.find((l) => l.label === label);
-  return link ? [{ ...link, text: readable(link.href) }] : [];
-});
-const email = contacts.find((c) => c.label === 'Email')?.text;
-
-// UTC offset of the profile's time zone: "GMT+6" → "UTC+6".
-const utc = (() => {
+// The UTC offset is rendered on the server; the script below adds the live time in front of it.
+const tz = profile.timezone;
+const utcOffset = (() => {
   try {
-    const name = new Intl.DateTimeFormat('en', { timeZone: profile.timezone, timeZoneName: 'shortOffset' })
+    const name = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'shortOffset' })
       .formatToParts(new Date())
       .find((p) => p.type === 'timeZoneName')?.value;
     return name ? name.replace('GMT', 'UTC') : '';
@@ -57,310 +42,527 @@ const utc = (() => {
   }
 })();
 
-// Plain-text rows after the links, labelled with the profile's own field names.
-const facts = ['Based in', 'Works'].flatMap((label) => {
-  const value = field(label);
-  if (!value) return [];
-  return [{ label, text: label === 'Based in' && utc ? `${value} (${utc})` : value }];
-});
+const facts = [
+  { label: 'Based in', value: field('Based in'), clock: true },
+  { label: 'Works', value: field('Works'), clock: false },
+  { label: 'Experience', value: `${years}+ years`, clock: false },
+].filter((f) => f.value);
 
-// Languages before education, as on most CVs; anything added later follows in data order.
-// Each comma-separated part gets its own line; commas inside parentheses stay put.
-const bgOrder = ['Languages', 'Education'];
-const bgRank = (/** @type {string} */ label) => {
-  const i = bgOrder.indexOf(label);
-  return i === -1 ? bgOrder.length : i;
-};
-const background = [...profile.background]
-  .sort((a, b) => bgRank(a.label) - bgRank(b.label))
-  .map((b) => ({ ...b, id: `bg-${slug(b.label)}`, lines: b.value.split(/,\s*(?![^()]*\))/) }));
+const email = profile.links.find((l) => l.href.startsWith('mailto:'));
+const address = email ? email.href.replace(/^mailto:/, '').split('?')[0] : '';
+const profiles = profile.links.filter((l) => l !== email);
 
-/* ——— Main column ——— */
+/* ——— Sections: the scrollspy lists these; "Education and languages" is read under Skills ——— */
 
-// The profile is composed from data only: years and stack, domains, then the strongest result.
-// "6+ years with React, Next.js and TypeScript, building products in HRTech, … and PropTech."
-const domains = field('Domains');
-const lead = [field('Experience'), domains && `building products in ${andList(domains)}`].filter(Boolean).join(', ');
-// "Autofill engine at HirePilot: 2 min instead of 25 min to fill in a job application, …"
-const top = results[0];
-const topSentence =
-  top &&
-  `${top.project ? `${top.project} at ${top.company}` : `At ${top.company}`}: ` +
-    `${top.after}${top.before ? ` instead of ${top.before}` : ''} ${top.what}.`;
-const sentences = [lead && `${lead.charAt(0).toUpperCase()}${lead.slice(1)}.`, topSentence].filter(Boolean);
-const profileText = keepHyphens(sentences.join(' '));
+const sections = [
+  { id: 'overview', label: 'Overview' },
+  ...(results.length ? [{ id: 'results', label: 'Results' }] : []),
+  { id: 'experience', label: 'Experience' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'contact', label: 'Contact' },
+];
 
-const rows = results.map((r) => ({ ...r, whatParts: keepHyphens(r.what) }));
+/* ——— Overview ——— */
 
-const jobs = experience.map((job) => ({
-  ...job,
-  duration: formatDuration(monthsBetween(job.start, job.end)),
-  summaryParts: keepHyphens(job.summary),
-  points: job.highlights.slice(0, 4).map(keepHyphens),
-}));
+const latest = experience[0];
+const isCurrent = Boolean(latest && !latest.end);
+// Split on commas only, so "crypto and Web3" stays one domain.
+const domains = field('Domains')
+  .split(/\s*,\s*/)
+  .filter(Boolean)
+  .map(capitalize);
+
+/* ——— Results, experience, background, contact ——— */
+
+const source = (/** @type {{ company: string, project?: string }} */ r) =>
+  r.project ? `${r.project} at ${r.company}` : r.company;
+
+const jobs = experience.map((j) => ({ ...j, duration: formatDuration(monthsBetween(j.start, j.end)) }));
+
+// "Education and languages", built from the labels, so a new row also renames the section.
+const backgroundTitle = profile.background
+  .map((b, i) => (i ? b.label.toLowerCase() : b.label))
+  .join(', ')
+  .replace(/, ([^,]*)$/, ' and $1');
+
+const contacts = [
+  ...profile.links.map((l) => ({ ...l, download: false, copy: l === email })),
+  ...(profile.cv ? [{ label: 'CV', value: 'Download PDF', href: profile.cv, download: true, copy: false }] : []),
+];
+
+const year = new Date().getFullYear();
 ---
 
 <Base>
   <Fragment slot="head">
-    <meta name="theme-color" content="#e9ecf1" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
   </Fragment>
 
-  <header class="bar">
-    <p class="bar-title">{profile.name}, CV</p>
-    <div class="bar-actions">
-      <button type="button" class="act" data-print><span class="act-label">Print or save as PDF</span></button>
-      {
-        profile.cv && (
-          <a class="act" href={profile.cv} download>
-            <span class="act-label">Download original PDF</span>
-          </a>
-        )
-      }
-      {
-        email && (
-          <button type="button" class="act" data-copy={email}>
-            <span class="act-label act-idle">Copy email</span>
-            <span class="act-label act-done">Email copied</span>
-          </button>
-        )
-      }
-    </div>
-    <p class="sr-only" role="status" aria-live="polite" data-status></p>
-  </header>
-
-  <main class="sheet">
-    <div class="mark" aria-hidden="true">
-      <span class="avatar">{initials}</span>
-    </div>
-
-    <header class="head">
-      <h1>{profile.name}</h1>
-      <p class="role">{profile.role}</p>
-    </header>
-
+  <div class="page">
     <div class="side">
-      <section class="s-sec s-contact" aria-labelledby="contact-title">
-        <h2 id="contact-title" class="s-title">Contact</h2>
-        <address class="contact">
-          <dl class="pairs">
-            {
-              contacts.map((c) => (
-                <div class="pair">
-                  <dt>{c.label}</dt>
-                  <dd>
-                    <a href={c.href}>{c.text}</a>
-                  </dd>
-                </div>
-              ))
-            }
-            {
-              facts.map((f) => (
-                <div class="pair">
-                  <dt>{f.label}</dt>
-                  <dd>{f.text}</dd>
-                </div>
-              ))
-            }
-          </dl>
-        </address>
-      </section>
-
-      <section class="s-sec s-skills" aria-labelledby="skills-title">
-        <h2 id="skills-title" class="s-title">Skills</h2>
-        <dl class="skills">
+      <header class="profile">
+        <div class="avatar" aria-hidden="true">{initials}</div>
+        <h1>{profile.name}</h1>
+        <p class="role">{profile.role}</p>
+        {
+          profile.intro && (
+            <p class="intro">
+              {keepHyphens(profile.intro).map((part, i) => (i % 2 ? <span class="nowrap">{part}</span> : part))}
+            </p>
+          )
+        }
+        <dl class="facts">
           {
-            skills.map((s) => (
-              <div class="skill">
-                <dt>{s.group}</dt>
+            facts.map((f) => (
+              <div>
+                <dt>{f.label}</dt>
                 <dd>
-                  {s.items.map((item, i) => (
+                  {f.value}
+                  {f.clock && utcOffset && (
                     <>
-                      <span class="nowrap">{item}</span>
-                      {i < s.items.length - 1 && ', '}
+                      <span class="sr-only">, </span>
+                      <span class="clock num" data-clock data-tz={tz}>
+                        {utcOffset}
+                      </span>
                     </>
-                  ))}
+                  )}
                 </dd>
               </div>
             ))
           }
         </dl>
-      </section>
+        <div class="actions">
+          {
+            profile.cv && (
+              <a class="button" href={profile.cv} download>
+                Download CV (PDF)
+              </a>
+            )
+          }
+          {email && <a class="text-link" href={email.href}>Email me</a>}
+        </div>
+      </header>
 
-      {
-        background.map((b) => (
-          <section class="s-sec s-brief" aria-labelledby={b.id}>
-            <h2 id={b.id} class="s-title">
-              {b.label}
-            </h2>
-            <p class="brief">
-              {b.lines.map((line, i) => (
-                <>
-                  {i > 0 && <span class="sr-only">, </span>}
-                  <span class="brief-line">{line}</span>
-                </>
-              ))}
-            </p>
-          </section>
-        ))
-      }
+      <nav class="spy" aria-label="On this page" data-spy>
+        <div class="spy-track" data-spy-track>
+          <ul class="spy-list">
+            {
+              sections.map((s) => (
+                <li>
+                  <a href={`#${s.id}`}>{s.label}</a>
+                </li>
+              ))
+            }
+          </ul>
+          <span class="spy-bar" data-spy-bar hidden></span>
+        </div>
+      </nav>
+
+      <ul class="social" aria-label="Profiles">
+        {
+          profiles.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))
+        }
+      </ul>
     </div>
 
-    <div class="body">
-      {
-        sentences.length > 0 && (
-          <section class="m-sec" aria-labelledby="profile-title">
-            <h2 id="profile-title" class="m-title">Profile</h2>
-            <p class="prose">{profileText.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}</p>
-          </section>
-        )
-      }
-
-      {
-        rows.length > 0 && (
-          <section class="m-sec" aria-labelledby="results-title">
-            <h2 id="results-title" class="m-title">Key results</h2>
-            <ul class="results" role="list">
-              {rows.map((r) => (
-                <li class="result">
-                  <p class="r-nums num">
-                    <strong class="r-after">{r.after}</strong>
-                    {r.before && (
-                      <s class="r-before">
-                        <span class="sr-only">instead of </span>
-                        {r.before}
-                      </s>
+    <div class="col">
+      <main class="content">
+        <section id="overview" class="section" aria-labelledby="overview-title">
+          <h2 id="overview-title">Overview</h2>
+          {
+            latest && (
+              <div class="now">
+                <div class="now-head">
+                  <h3 class="now-label">{isCurrent ? 'Now' : 'Latest role'}</h3>
+                  <p class="now-since num">
+                    {isCurrent ? (
+                      <>
+                        Since <time datetime={latest.start}>{formatMonth(latest.start)}</time>
+                      </>
+                    ) : (
+                      <>
+                        <time datetime={latest.start}>{formatMonth(latest.start)}</time> –{' '}
+                        <time datetime={latest.end}>{formatMonth(latest.end)}</time>
+                      </>
                     )}
                   </p>
-                  <p class="r-text">
-                    <span class="r-what">
-                      {r.whatParts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}
-                    </span>
-                    <span class="sr-only">, </span>
-                    <span class="r-co">{r.company}</span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )
-      }
-
-      <section class="m-sec" aria-labelledby="experience-title">
-        <h2 id="experience-title" class="m-title">Experience</h2>
-        <ol class="jobs" role="list">
-          {
-            jobs.map((job) => (
-              <li class="job">
-                <div class="job-head">
-                  <h3 class="job-title">
-                    {job.role}, <span class="job-co">{job.company}</span>
-                  </h3>
-                  <p class="job-when num">
-                    <time datetime={job.start}>{formatMonth(job.start)}</time>
-                    <span aria-hidden="true">{' – '}</span>
-                    <span class="sr-only">{' to '}</span>
-                    {job.end ? <time datetime={job.end}>{formatMonth(job.end)}</time> : 'Present'}
-                  </p>
-                  <p class="job-dur num">
-                    <span class="job-sep">, </span>
-                    {job.duration}
-                  </p>
-                  {job.location && <p class="job-where">{job.location}</p>}
                 </div>
-                <p class="job-summary">
-                  {job.summaryParts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}
+                <p class="now-company">{latest.company}</p>
+                <p class="now-role">{latest.role}</p>
+                <p class="now-summary">
+                  {keepHyphens(latest.summary).map((t, i) => (i % 2 ? <span class="nowrap">{t}</span> : t))}
                 </p>
-                {job.points.length > 0 && (
-                  <ul class="job-points">
-                    {job.points.map((parts) => (
-                      <li>{parts.map((p) => (p.nowrap ? <span class="nowrap">{p.text}</span> : p.text))}</li>
+              </div>
+            )
+          }
+          {
+            domains.length > 0 && (
+              <div class="pair domains">
+                <h3 class="label">Domains</h3>
+                <ul class="chips">
+                  {domains.map((d) => (
+                    <li class="chip">{d}</li>
+                  ))}
+                </ul>
+              </div>
+            )
+          }
+        </section>
+
+        {
+          results.length > 0 && (
+            <section id="results" class="section" aria-labelledby="results-title">
+              <h2 id="results-title">Results</h2>
+              <ul class="results" role="list">
+                {results.map((r) => (
+                  <li class="result">
+                    {r.before && (
+                      <p class="r-before num">
+                        <span class="sr-only">Before: </span>
+                        <s>{r.before}</s>
+                      </p>
+                    )}
+                    <p class="r-after num">
+                      {r.before && <span class="sr-only">After: </span>}
+                      {r.after}
+                    </p>
+                    <p class="r-what">
+                      {keepHyphens(r.what).map((t, i) => (i % 2 ? <span class="nowrap">{t}</span> : t))}
+                    </p>
+                    <p class="r-source">{source(r)}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <section id="experience" class="section" aria-labelledby="experience-title">
+          <h2 id="experience-title">Experience</h2>
+          <ol class="jobs" role="list">
+            {
+              jobs.map((job) => (
+                <li>
+                  <details class="job">
+                    <summary>
+                      {/* The sr-only commas keep the disclosure's accessible name from running together. */}
+                      <span class="job-company">{job.company}</span>
+                      <span class="job-role">
+                        <span class="sr-only">, </span>
+                        {job.role}
+                      </span>
+                      <span class="job-meta num">
+                        <span class="job-dates">
+                          <span class="sr-only">, </span>
+                          <time datetime={job.start}>{formatMonth(job.start)}</time> –{' '}
+                          {job.end ? <time datetime={job.end}>{formatMonth(job.end)}</time> : 'Present'}
+                        </span>
+                        <span class="job-sep">, </span>
+                        <span class="job-dur">{job.duration}</span>
+                      </span>
+                      <svg class="job-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                        <path
+                          d="M4 6l4 4 4-4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </summary>
+                    <div class="job-body">
+                      <p>{keepHyphens(job.summary).map((t, i) => (i % 2 ? <span class="nowrap">{t}</span> : t))}</p>
+                      <ul class="job-highlights">
+                        {job.highlights.map((h) => (
+                          <li>{keepHyphens(h).map((t, i) => (i % 2 ? <span class="nowrap">{t}</span> : t))}</li>
+                        ))}
+                      </ul>
+                      {job.stack && (
+                        <ul class="chips" aria-label="Stack">
+                          {job.stack.map((s) => (
+                            <li class="chip">{s}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </details>
+                </li>
+              ))
+            }
+          </ol>
+        </section>
+
+        <section id="skills" class="section" aria-labelledby="skills-title">
+          <h2 id="skills-title">Skills</h2>
+          <div class="skills">
+            {
+              skills.map((g) => (
+                <div class="pair">
+                  <h3 class="label">{g.group}</h3>
+                  <ul class="chips">
+                    {g.items.map((item) => (
+                      <li class="chip">{item}</li>
                     ))}
                   </ul>
-                )}
-              </li>
-            ))
-          }
-        </ol>
-      </section>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+
+        {
+          profile.background.length > 0 && (
+            <section id="background" class="section" aria-labelledby="background-title">
+              <h2 id="background-title">{backgroundTitle}</h2>
+              <dl class="rows">
+                {profile.background.map((b) => (
+                  <div class="pair row">
+                    <dt class="label">{b.label}</dt>
+                    <dd>{b.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )
+        }
+
+        <section id="contact" class="section" aria-labelledby="contact-title">
+          <h2 id="contact-title">Contact</h2>
+          <dl class="rows">
+            {
+              contacts.map((c) => (
+                <div class="pair row">
+                  <dt class="label">{c.label}</dt>
+                  <dd class="row-value">
+                    <a href={c.href} download={c.download || undefined}>
+                      {c.value}
+                    </a>
+                    {c.copy && address && (
+                      <button type="button" class="copy" data-copy={address} hidden>
+                        <span class="copy-label copy-idle">Copy email</span>
+                        <span class="copy-label copy-done">Email copied</span>
+                      </button>
+                    )}
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
+          <p class="sr-only" role="status" aria-live="polite" data-status></p>
+        </section>
+      </main>
+
+      <footer class="foot" data-spy-end>
+        <p>© {year} {profile.name}</p>
+      </footer>
     </div>
-  </main>
+  </div>
 </Base>
 
 <script>
-  document.querySelector('[data-print]')?.addEventListener('click', () => window.print());
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* ——— Clock: the live time in the profile's time zone, in front of the server-rendered UTC offset ——— */
+
+  const clock = /** @type {HTMLElement | null} */ (document.querySelector('[data-clock]'));
+  if (clock?.dataset.tz) {
+    try {
+      const format = new Intl.DateTimeFormat('en-GB', {
+        timeZone: clock.dataset.tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      });
+      const offset = clock.textContent?.trim() ?? '';
+      const tick = () => {
+        clock.textContent = `${format.format(new Date())} local time${offset ? ` (${offset})` : ''}`;
+      };
+      tick();
+      window.setInterval(tick, 30_000);
+    } catch {
+      // An unknown time zone keeps the UTC offset.
+    }
+  }
+
+  /* ——— Scrollspy: the section whose top has passed a line at 31% of the viewport is the current one ——— */
+
+  const nav = /** @type {HTMLElement | null} */ (document.querySelector('[data-spy]'));
+  const track = /** @type {HTMLElement | null} */ (nav?.querySelector('[data-spy-track]') ?? null);
+  const bar = /** @type {HTMLElement | null} */ (nav?.querySelector('[data-spy-bar]') ?? null);
+
+  if (nav && track && bar && 'IntersectionObserver' in window) {
+    const links = /** @type {HTMLAnchorElement[]} */ ([...nav.querySelectorAll('a[href^="#"]')]);
+    const targets = links.map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))));
+    const LINE = 0.31;
+    let current = -1;
+    let atEnd = false;
+    let locked = false;
+    let unlock = 0;
+
+    /** Moves the indicator to the current link: a bar on its left in the column, an underline in the tab bar. */
+    const place = () => {
+      const a = links[current];
+      if (!a) return;
+      nav.style.setProperty('--spy-x', `${a.offsetLeft}px`);
+      nav.style.setProperty('--spy-y', `${a.offsetTop}px`);
+      nav.style.setProperty('--spy-w', `${a.offsetWidth}px`);
+      nav.style.setProperty('--spy-h', `${a.offsetHeight}px`);
+      bar.hidden = false;
+    };
+
+    /** In the horizontal tab bar, scrolls the active tab into view. A no-op when the list does not scroll. */
+    const reveal = (/** @type {boolean} */ smooth) => {
+      const a = links[current];
+      if (!a) return;
+      const pad = parseFloat(getComputedStyle(track).paddingInlineStart) || 0;
+      const start = a.offsetLeft - pad;
+      const end = a.offsetLeft + a.offsetWidth + pad - track.clientWidth;
+      const left = Math.min(Math.max(track.scrollLeft, end), start);
+      if (Math.abs(left - track.scrollLeft) > 1) {
+        track.scrollTo({ left, behavior: smooth && !reduce.matches ? 'smooth' : 'auto' });
+      }
+    };
+
+    /** Re-places the indicator without the slide, for resizes and font swaps. */
+    const settle = () => {
+      nav.dataset.still = '';
+      place();
+      reveal(false);
+      void bar.offsetWidth;
+      delete nav.dataset.still;
+    };
+
+    const activate = (/** @type {number} */ i) => {
+      if (i === current || !links[i]) return;
+      links[current]?.removeAttribute('aria-current');
+      current = i;
+      links[i].setAttribute('aria-current', 'true');
+      place();
+      // Instant until the page has settled, so nothing moves on load.
+      reveal('ready' in nav.dataset);
+    };
+
+    const update = () => {
+      if (locked) return;
+      if (atEnd) return activate(links.length - 1);
+      const line = window.innerHeight * LINE;
+      let index = 0;
+      targets.forEach((t, i) => {
+        if (t && t.getBoundingClientRect().top <= line) index = i;
+      });
+      activate(index);
+    };
+
+    // A band from 30% to 31% of the viewport: every section edge that crosses it re-checks the current section.
+    const bandObserver = new IntersectionObserver(update, { rootMargin: '-30% 0px -69% 0px' });
+    targets.forEach((t) => t && bandObserver.observe(t));
+
+    // At the end of the page the last section may never reach the line, so the footer coming into view selects it.
+    const end = document.querySelector('[data-spy-end]');
+    if (end) {
+      new IntersectionObserver(([entry]) => {
+        atEnd = entry.isIntersecting;
+        update();
+      }).observe(end);
+    }
+
+    // A click selects its section at once and holds it while the page scrolls there.
+    const hold = (/** @type {number} */ ms) => {
+      window.clearTimeout(unlock);
+      unlock = window.setTimeout(() => (locked = false), ms);
+    };
+    nav.addEventListener('click', (event) => {
+      // A modified click opens a new tab and leaves this page where it is.
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = /** @type {HTMLElement} */ (event.target).closest('a');
+      const i = links.indexOf(/** @type {HTMLAnchorElement} */ (link));
+      if (i < 0) return;
+      locked = false;
+      activate(i);
+      locked = true;
+      hold(400);
+    });
+    window.addEventListener('scroll', () => locked && hold(150), { passive: true });
+
+    update();
+    settle();
+
+    const resize = new ResizeObserver(settle);
+    resize.observe(track);
+    links.forEach((a) => resize.observe(a));
+    document.fonts?.ready.then(settle);
+
+    // Placed without motion first; only later moves slide.
+    requestAnimationFrame(() => requestAnimationFrame(() => (nav.dataset.ready = '')));
+  }
+
+  /* ——— Copy email ——— */
 
   const copy = /** @type {HTMLButtonElement | null} */ (document.querySelector('[data-copy]'));
   const status = document.querySelector('[data-status]');
 
-  if (copy) {
-    if (!navigator.clipboard?.writeText) {
-      copy.hidden = true;
-    } else {
-      let timer = 0;
-      const announce = (/** @type {string} */ text) => {
-        if (!status) return;
-        status.textContent = '';
-        window.setTimeout(() => (status.textContent = text), 50);
-      };
-      copy.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(copy.dataset.copy ?? '');
-          copy.dataset.done = '';
-          announce('Email copied to clipboard');
-          window.clearTimeout(timer);
-          timer = window.setTimeout(() => {
-            delete copy.dataset.done;
-            if (status) status.textContent = '';
-          }, 2000);
-        } catch {
-          announce('Could not copy the email');
-        }
-      });
-    }
+  if (copy && navigator.clipboard?.writeText) {
+    copy.hidden = false;
+    let timer = 0;
+    const announce = (/** @type {string} */ text) => {
+      if (!status) return;
+      status.textContent = '';
+      window.setTimeout(() => (status.textContent = text), 50);
+    };
+    copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(copy.dataset.copy ?? '');
+        copy.dataset.done = '';
+        announce('Email copied to clipboard');
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          delete copy.dataset.done;
+          if (status) status.textContent = '';
+        }, 2000);
+      } catch {
+        announce('Could not copy the email');
+      }
+    });
   }
 </script>
 
 <style is:global>
   :root {
-    --desk: #e9ecf1;
-    --paper: #ffffff;
-    --side: #10263a;
-    --on-side: #eef2f7;
-    --on-side-muted: #a9b6c6;
-    --ink: #18202a;
-    --muted: #5b6573;
-    --rule: #e1e5ea;
-    --accent: #1e7bd8;
-    /* #1e7bd8 is 4.3:1 on white and 3.6:1 on the desk, under AA for small text, so accent-coloured
-       text on paper or desk takes one step deeper. Rules, dots and the avatar keep the accent itself. */
-    --accent-ink: #1868b8;
-    /* Accent-coloured text on the band (the role, on narrow screens). */
-    --accent-on-side: #5ba6f0;
-    --on-accent: #ffffff;
-    --shadow: 0 1px 2px rgb(16 38 58 / 0.06), 0 12px 32px rgb(16 38 58 / 0.08);
-    --font: 'Figtree Variable', system-ui, sans-serif;
-    --side-w: 70mm;
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --ink: #0f1115;
+    --muted: #5c6370;
+    --rule: #e7e8eb;
+    --accent: #2f6feb;
+    --accent-soft: #eaf1fe;
+
+    --font: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+    --side: 23rem;
+    --measure: 44rem;
+    --gutter: clamp(1rem, 5vw, 1.5rem);
+    --label: 9rem;
+    --radius: 12px;
+    --radius-sm: 6px;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
     color-scheme: light dark;
   }
 
-  /* Screen only: print always gets the light tokens. */
+  /* Screen only, so a printout always gets the light tokens. */
   @media screen and (prefers-color-scheme: dark) {
     :root {
-      --desk: #0f1216;
-      --paper: #171a1f;
-      --side: #0c1b29;
-      --on-side: #e3e9f0;
-      --on-side-muted: #93a2b4;
-      --ink: #e8ecf1;
-      --muted: #9ca6b3;
-      --rule: #2a2f37;
-      --accent: #5ba6f0;
-      --accent-ink: #5ba6f0;
-      --accent-on-side: #5ba6f0;
-      /* White on the light dark-mode accent is 2.6:1, so the initials take the band colour instead. */
-      --on-accent: #0c1b29;
-      --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px rgb(0 0 0 / 0.32);
+      --bg: #0d0e10;
+      --panel: #141518;
+      --ink: #edeef0;
+      --muted: #9aa0aa;
+      --rule: #24262b;
+      --accent: #6ea0ff;
+      --accent-soft: #16213a;
     }
   }
 
@@ -375,12 +577,18 @@ const jobs = experience.map((job) => ({
     text-size-adjust: 100%;
   }
 
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   body {
     margin: 0;
-    background: var(--desk);
+    background: var(--bg);
     color: var(--ink);
-    font: 400 1rem/1.5 var(--font);
-    font-kerning: normal;
+    font: 400 1rem/1.55 var(--font);
+    font-optical-sizing: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -392,8 +600,7 @@ const jobs = experience.map((job) => ({
   ul,
   ol,
   dl,
-  dd,
-  address {
+  dd {
     margin: 0;
   }
 
@@ -403,12 +610,16 @@ const jobs = experience.map((job) => ({
     list-style: none;
   }
 
-  address {
-    font-style: normal;
-  }
-
   a {
     color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  }
+
+  a:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
   }
 
   [hidden] {
@@ -416,9 +627,12 @@ const jobs = experience.map((job) => ({
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent-ink);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 2px;
+  }
+
+  a:not(.button):focus-visible {
+    border-radius: 3px;
   }
 
   ::selection {
@@ -432,7 +646,6 @@ const jobs = experience.map((job) => ({
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
-    user-select: none;
   }
 
   .num {
@@ -443,684 +656,847 @@ const jobs = experience.map((job) => ({
     white-space: nowrap;
   }
 
-  /* ——— Toolbar: outside the sheet, never printed ——— */
+  /* ——— Page: one column on small screens, the sticky split from 1024px ——— */
 
-  .bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0 24px;
-    width: 210mm;
-    max-width: calc(100% - 32px);
-    margin: 0 auto;
-    padding-top: 14px;
-    font-size: 0.875rem;
+  .page {
+    max-width: 76rem;
+    margin-inline: auto;
   }
 
-  .bar-title {
-    color: var(--muted);
-  }
+  /* ——— Profile ——— */
 
-  .bar-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 22px;
-  }
-
-  /* Labels sit at the start of the cell, so an action that wraps to a new line starts flush; on the
-     desktop bar they sit at the end, so the last action ends flush with the sheet. */
-  .act {
-    display: inline-grid;
-    justify-items: start;
-    margin-inline: -4px;
-    padding: 8px 4px;
-    border: 0;
-    background: none;
-    color: var(--accent-ink);
-    font: inherit;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .act-label {
-    grid-area: 1 / 1;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
-    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
-  }
-
-  @media (width >= 820px) {
-    .act {
-      justify-items: end;
-    }
-  }
-
-  .act:hover .act-label {
-    text-decoration-color: currentColor;
-  }
-
-  /* Both labels share one cell, so the button keeps its width when the label swaps. */
-  .act-done,
-  .act[data-done] .act-idle {
-    visibility: hidden;
-  }
-
-  .act[data-done] .act-done {
-    visibility: visible;
-  }
-
-  @media (scripting: none) {
-    [data-print],
-    [data-copy] {
-      display: none;
-    }
-  }
-
-  /* ——— The sheet: band on the left, story on the right ——— */
-
-  /* The avatar and the name share the first row, so "Contact" and "Profile" start on one line below it.
-     The band is two cells (avatar, then details) that stretch with their rows to the bottom of the sheet. */
-  .sheet {
-    --pad-top: 14mm;
-    --pad-side: 10mm;
-    --pad-main: 14mm;
-    --head-gap: 8mm;
-    --sec-gap: 7mm;
-    display: grid;
-    grid-template-columns: var(--side-w) minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      'mark head'
-      'side body';
-    width: 210mm;
-    max-width: calc(100% - 32px);
-    min-height: 297mm;
-    margin: 24px auto 64px;
-    background: var(--paper);
-    box-shadow: var(--shadow);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .mark {
-    grid-area: mark;
-    padding: var(--pad-top) var(--pad-side) var(--head-gap);
-    background: var(--side);
-  }
-
-  /* Positioned, so it paints above the band cell that overlaps it in print. */
   .avatar {
-    position: relative;
     display: grid;
     place-items: center;
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
-    font-size: 23px;
-    font-weight: 700;
+    background: var(--accent-soft);
+    color: var(--accent);
+    /* 24px makes the initials large text, so the light pair (4:1) clears the 3:1 bar. */
+    font-size: 1.5rem;
+    font-weight: 650;
     line-height: 1;
-    letter-spacing: 0.02em;
-  }
-
-  .head {
-    grid-area: head;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: var(--pad-top) var(--pad-main) var(--head-gap);
+    letter-spacing: -0.01em;
+    user-select: none;
   }
 
   h1 {
-    font-size: 34px;
-    font-weight: 750;
-    line-height: 1.08;
+    margin-top: 1.25rem;
+    font-size: 2.125rem;
+    font-weight: 650;
+    line-height: 1.1;
     letter-spacing: -0.02em;
+    text-wrap: balance;
   }
 
   .role {
-    margin-top: 4px;
-    color: var(--accent-ink);
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.35;
+    margin-top: 0.375rem;
+    color: var(--muted);
+    font-size: 1.0625rem;
   }
 
-  .side {
-    grid-area: side;
-    padding: 0 var(--pad-side) var(--pad-top);
-    background: var(--side);
-    color: var(--on-side);
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  .body {
-    grid-area: body;
-    padding: 0 var(--pad-main) var(--pad-top);
-  }
-
-  /* Both column titles sit on a 20px line with their rule 5px below, so the first pair lines up. */
-  .s-title,
-  .m-title {
-    line-height: 20px;
-  }
-
-  .s-title {
-    font-size: 12.5px;
-    font-weight: 700;
-  }
-
-  .s-title::after {
-    content: '';
-    display: block;
-    width: 24px;
-    height: 2px;
-    margin-top: 5px;
-    border-radius: 1px;
-    background: var(--accent);
-  }
-
-  .m-title {
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--rule);
-    font-size: 15px;
-    font-weight: 750;
-    letter-spacing: -0.005em;
-  }
-
-  .s-sec + .s-sec,
-  .m-sec + .m-sec {
-    margin-top: var(--sec-gap);
-  }
-
-  /* ——— Sidebar content: small muted labels over readable values ——— */
-
-  .pairs,
-  .skills {
-    display: grid;
-    row-gap: 8px;
-    margin-top: 11px;
-  }
-
-  .pair dt,
-  .skill dt {
-    color: var(--on-side-muted);
-    font-size: 11px;
-    line-height: 1.4;
-  }
-
-  .pair dd {
-    overflow-wrap: anywhere;
-  }
-
-  .skill dd {
+  .intro {
+    max-width: 40ch;
+    margin-top: 1.25rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
     text-wrap: pretty;
   }
 
-  .side a {
-    text-decoration-line: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.22em;
-    text-decoration-color: color-mix(in srgb, currentColor 32%, transparent);
+  .facts {
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
   }
 
-  .side a:hover {
+  .facts > div {
+    display: grid;
+    grid-template-columns: 5.75rem minmax(0, 1fr);
+    gap: 1rem;
+    padding-block: 0.5rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .facts > div:last-child {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .facts dt,
+  .clock {
+    color: var(--muted);
+  }
+
+  .clock {
+    display: block;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 1rem;
+    border-radius: 8px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .button:hover {
+    background: color-mix(in srgb, var(--ink) 84%, var(--bg));
+    color: var(--bg);
+  }
+
+  .text-link {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  /* ——— Scrollspy ——— */
+
+  .spy-track {
+    position: relative;
+  }
+
+  .spy a {
+    display: block;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .spy a:hover,
+  .spy a[aria-current] {
+    color: var(--ink);
+  }
+
+  .spy-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--accent);
+    pointer-events: none;
+  }
+
+  .spy[data-ready]:not([data-still]) .spy-bar {
+    transition:
+      transform 0.28s var(--ease),
+      width 0.28s var(--ease),
+      height 0.28s var(--ease);
+  }
+
+  /* ——— Profiles ——— */
+
+  /* Three to a row in narrow columns, so five links break 3 + 2 rather than 4 + 1. */
+  .social {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    gap: 0.25rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .social a {
+    display: inline-block;
+    padding-block: 0.125rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .social a:hover {
+    color: var(--ink);
+    text-decoration: underline;
     text-decoration-color: currentColor;
   }
 
-  .side :focus-visible {
-    outline-color: var(--on-side);
+  /* ——— Content ——— */
+
+  .content {
+    container: content / inline-size;
   }
 
-  .brief {
-    margin-top: 11px;
+  .content,
+  .foot {
+    max-width: var(--measure);
   }
 
-  .brief-line {
-    display: block;
+  /* Matches the column's top padding, so a jump to Overview lands at the very top. */
+  .section {
+    scroll-margin-top: 3rem;
   }
 
-  /* ——— Main column ——— */
+  .section + .section {
+    margin-top: 3.5rem;
+  }
 
-  .prose {
-    max-width: 75ch;
-    margin-top: 10px;
+  h2 {
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  .label {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  /* A label column and its content; the label goes on top in a narrow column. */
+  .pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.375rem;
+  }
+
+  @container content (width >= 30rem) {
+    .pair {
+      grid-template-columns: var(--label) minmax(0, 1fr);
+      gap: 1.5rem;
+      align-items: baseline;
+    }
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .chip {
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* ——— Overview ——— */
+
+  .now {
+    padding: 1.5rem 1.75rem 1.75rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+
+  .now-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .now-label {
+    color: var(--accent);
+    font-size: inherit;
+    font-weight: 600;
+  }
+
+  .now-since {
+    color: var(--muted);
+  }
+
+  .now-company {
+    margin-top: 0.875rem;
+    font-size: 1.375rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .now-role {
+    margin-top: 0.25rem;
+    color: var(--muted);
+  }
+
+  .now-summary {
+    max-width: 62ch;
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
     text-wrap: pretty;
   }
 
-  /* Key results: the new number large, the old one struck through beneath it, then what changed. */
+  @container content (width < 30rem) {
+    .now {
+      padding: 1.25rem 1.25rem 1.5rem;
+    }
+  }
+
+  .domains {
+    margin-top: 1.5rem;
+  }
+
+  /* ——— Results: hairline rows in two columns; subgrid lines up the numbers across a row ——— */
+
   .results {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    column-gap: 18px;
-    row-gap: 11px;
-    margin-top: 12px;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 2.5rem;
+  }
+
+  @container content (width >= 34rem) {
+    .results {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   .result {
     display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-    align-items: baseline;
-    break-inside: avoid;
-  }
-
-  .r-nums {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .r-after {
-    font-size: 20px;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    padding-block: 1rem 1.375rem;
+    border-top: 1px solid var(--rule);
   }
 
   .r-before {
+    grid-row: 1;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.875rem;
     line-height: 1.4;
+  }
+
+  .r-before s {
     text-decoration-thickness: 1px;
   }
 
-  .r-what,
-  .r-co {
-    display: block;
+  .r-after {
+    grid-row: 2;
+    font-size: 1.75rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
 
   .r-what {
-    max-width: 75ch;
+    grid-row: 3;
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
     text-wrap: pretty;
   }
 
-  .r-co {
+  .r-source {
+    grid-row: 4;
+    align-self: end;
+    margin-top: 0.75rem;
     color: var(--muted);
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 0.8125rem;
   }
 
-  /* Experience: a hairline rail on the left with a dot at each job. Each job draws the rail from its own
-     dot down to the next one, so the line starts and ends on a dot. */
+  /* ——— Experience ——— */
+
   .jobs {
-    --title-lh: 19px;
-    --dot: 7px;
-    margin-top: 14px;
+    border-bottom: 1px solid var(--rule);
   }
 
-  .job {
-    position: relative;
-    padding-left: 20px;
-    padding-bottom: 16px;
-    break-inside: avoid;
+  .jobs > li {
+    border-top: 1px solid var(--rule);
   }
 
-  .job:last-child {
-    padding-bottom: 0;
-  }
-
-  /* The rail comes first in paint order, so the dot sits on top of it. */
-  .job:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    top: calc(var(--title-lh) / 2);
-    bottom: calc(var(--title-lh) / -2);
-    left: calc(var(--dot) / 2 - 0.5px);
-    width: 1px;
-    background: var(--rule);
-  }
-
-  .job::after {
-    content: '';
-    position: absolute;
-    top: calc(var(--title-lh) / 2 - var(--dot) / 2);
-    left: 0;
-    width: var(--dot);
-    height: var(--dot);
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
-  .job-head {
+  .job > summary {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 14px;
+    grid-template-columns: minmax(0, 1fr) 1rem;
+    grid-template-areas:
+      'company icon'
+      'role icon'
+      'meta icon';
+    column-gap: 1rem;
     align-items: baseline;
+    margin-inline: -0.75rem;
+    padding: 0.875rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    list-style: none;
   }
 
-  .job-title {
-    grid-area: 1 / 1;
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: var(--title-lh);
-  }
-
-  .job-co {
-    color: var(--accent-ink);
-  }
-
-  .job-when,
-  .job-dur,
-  .job-where {
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  .job-when {
-    grid-area: 1 / 2;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .job-where {
-    grid-area: 2 / 1;
-  }
-
-  .job-dur {
-    grid-area: 2 / 2;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  /* Only phones set the duration on the dates line, after a comma. */
-  .job-sep {
+  .job > summary::-webkit-details-marker {
     display: none;
   }
 
-  .job-summary {
-    max-width: 75ch;
-    margin-top: 5px;
+  .job > summary:hover {
+    background: var(--panel);
+  }
+
+  .job > summary:focus-visible {
+    outline-offset: 0;
+  }
+
+  .job-company {
+    grid-area: company;
+    font-weight: 600;
+  }
+
+  .job-role {
+    grid-area: role;
     color: var(--muted);
-    text-wrap: pretty;
+    font-size: 0.9375rem;
   }
 
-  .job-points {
-    display: grid;
-    row-gap: 2px;
-    max-width: 75ch;
-    margin-top: 6px;
+  .job-meta {
+    grid-area: meta;
+    margin-top: 0.125rem;
+    color: var(--muted);
+    font-size: 0.875rem;
   }
 
-  .job-points li {
-    position: relative;
-    padding-left: 13px;
-    text-wrap: pretty;
+  .job-chevron {
+    grid-area: icon;
+    align-self: center;
+    color: var(--muted);
+    transition: rotate 0.2s var(--ease);
   }
 
-  .job-points li::before {
-    content: '';
-    position: absolute;
-    top: calc(0.75em - 2px);
-    left: 1px;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--muted);
+  .job[open] .job-chevron {
+    rotate: 180deg;
   }
 
-  /* ——— Narrow screens: full-bleed, and the band moves above the story ——— */
-
-  /* The name joins the avatar at the top of the band, so the first screen shows who this is.
-     Gutters are 16px on phones and centre a 42rem measure on tablets. */
-  @media screen and (width < 820px) {
-    .bar {
-      width: auto;
-      max-width: none;
-      padding-inline: max(16px, (100% - 42rem) / 2);
-      padding-top: 6px;
-      padding-bottom: 6px;
-      font-size: 0.8125rem;
-    }
-
-    .bar-actions {
-      gap: 0 16px;
-    }
-
-    .sheet {
-      --gutter: max(16px, (100cqi - 42rem) / 2);
-      --sec-gap: 30px;
-      container-type: inline-size;
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-rows: none;
+  @container content (width >= 34rem) {
+    .job > summary {
+      grid-template-columns: minmax(0, 1fr) auto 1rem;
       grid-template-areas:
-        'mark head'
-        'side side'
-        'body body';
-      width: auto;
-      max-width: none;
-      min-height: 0;
-      margin: 0;
-      box-shadow: none;
-      font-size: 15px;
+        'company dates icon'
+        'role dur icon';
     }
 
-    .mark {
-      padding: 22px 14px 0 var(--gutter);
+    .job-meta {
+      display: contents;
     }
 
-    .head {
-      padding: 22px var(--gutter) 0 0;
-      background: var(--side);
-      color: var(--on-side);
+    .job-dates {
+      grid-area: dates;
+      color: var(--ink);
+      text-align: end;
     }
 
-    h1 {
-      font-size: 27px;
-    }
-
-    .role {
-      margin-top: 2px;
-      color: var(--accent-on-side);
-      font-size: 15px;
-    }
-
-    .side {
-      padding: 26px var(--gutter) 30px;
-      font-size: 14px;
-    }
-
-    .body {
-      padding: 28px var(--gutter) 56px;
-    }
-
-    .s-title {
-      font-size: 14px;
-    }
-
-    .m-title {
-      font-size: 17px;
-    }
-
-    .pair dt,
-    .skill dt {
-      font-size: 12.5px;
-    }
-
-    .pairs,
-    .skills {
-      row-gap: 10px;
-    }
-
-    .jobs {
-      --title-lh: 21px;
-    }
-
-    .job {
-      padding-bottom: 26px;
-    }
-
-    .job-title {
-      font-size: 15px;
-    }
-
-    .job-when,
-    .job-dur,
-    .job-where,
-    .r-co,
-    .r-before {
-      font-size: 13.5px;
-    }
-
-    .r-after {
-      font-size: 21px;
-    }
-
-    .results {
-      row-gap: 14px;
-    }
-  }
-
-  /* Tablets: the band spreads into two columns, with languages and education side by side. */
-  @media screen and (560px <= width < 820px) {
-    .side {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--sec-gap) 32px;
-    }
-
-    .s-contact,
-    .s-skills {
-      grid-column: 1 / -1;
-    }
-
-    .side .s-sec + .s-sec {
-      margin-top: 0;
-    }
-
-    .pairs,
-    .skills {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: 32px;
-    }
-  }
-
-  /* Phones: contact rows become label and value side by side. */
-  @media screen and (width < 560px) {
-    .pair {
-      display: grid;
-      grid-template-columns: 5.25rem minmax(0, 1fr);
-      column-gap: 12px;
-      align-items: baseline;
-    }
-
-    /* Title, then "Nov 2025 – Present, 1 yr", then the location. Flex drops the source whitespace
-       between the dates and the comma. */
-    .job-head {
-      display: flex;
-      flex-wrap: wrap;
-      column-gap: 0;
-    }
-
-    .job-title,
-    .job-where {
-      flex-basis: 100%;
+    .job-dur {
+      grid-area: dur;
+      text-align: end;
     }
 
     .job-sep {
-      display: inline;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
   }
 
-  /* No motion on this page; this guards against anything added later. */
+  .job-body {
+    display: grid;
+    gap: 1rem;
+    max-width: 68ch;
+    padding: 0.25rem 0 1.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .job-highlights {
+    display: grid;
+    gap: 0.375rem;
+    padding-left: 1.125rem;
+    list-style: disc;
+  }
+
+  .job-highlights li {
+    padding-left: 0.25rem;
+    text-wrap: pretty;
+  }
+
+  .job-highlights li::marker {
+    color: var(--muted);
+  }
+
+  /* ——— Skills ——— */
+
+  .skills {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @container content (width >= 30rem) {
+    .skills {
+      gap: 0.75rem;
+    }
+  }
+
+  /* ——— Background and contact rows ——— */
+
+  .rows {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .row {
+    padding-block: 0.75rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .row dd {
+    font-size: 0.9375rem;
+  }
+
+  .row-value {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+
+  .row-value a {
+    overflow-wrap: anywhere;
+  }
+
+  .copy {
+    display: inline-grid;
+    justify-items: center;
+    margin-block: -0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  .copy:hover {
+    border-color: color-mix(in srgb, var(--muted) 45%, var(--rule));
+  }
+
+  .copy-label {
+    grid-area: 1 / 1;
+  }
+
+  /* Both labels share one cell, so the button keeps its width when the label swaps. */
+  .copy-done,
+  .copy[data-done] .copy-idle {
+    visibility: hidden;
+  }
+
+  .copy[data-done] .copy-done {
+    visibility: visible;
+  }
+
+  .foot {
+    margin-top: 4rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  /* ——— From 1024px: the sticky profile column and the content side by side ——— */
+
+  @media (width >= 64rem) {
+    .page {
+      display: grid;
+      grid-template-columns: var(--side) minmax(0, 1fr);
+    }
+
+    .side {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      overflow-y: auto;
+      padding: 3rem 2.5rem 2.5rem;
+      border-inline-end: 1px solid var(--rule);
+      scrollbar-width: thin;
+    }
+
+    .spy {
+      flex: 1 0 auto;
+      margin-top: 2.25rem;
+    }
+
+    .spy-track {
+      border-inline-start: 1px solid var(--rule);
+    }
+
+    .spy a {
+      padding: 0.4375rem 0 0.4375rem 1rem;
+    }
+
+    .spy-bar {
+      left: -1px;
+      width: 2px;
+      height: var(--spy-h, 0);
+      border-radius: 2px;
+      transform: translateY(var(--spy-y, 0));
+    }
+
+    .social {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+    }
+
+    .col {
+      min-width: 0;
+      padding: 3rem 3rem 2.5rem;
+    }
+  }
+
+  /* Laptop heights: a tighter column keeps the section list above the fold. */
+  @media (width >= 64rem) and (height < 55rem) {
+    .side {
+      padding-block: 2rem 1.75rem;
+    }
+
+    h1 {
+      margin-top: 1rem;
+    }
+
+    .intro {
+      margin-top: 0.875rem;
+    }
+
+    .facts {
+      margin-top: 1.125rem;
+    }
+
+    .facts > div {
+      padding-block: 0.375rem;
+    }
+
+    .actions {
+      margin-top: 1.125rem;
+    }
+
+    .spy {
+      margin-top: 1.5rem;
+    }
+
+    .spy a {
+      padding-block: 0.3125rem;
+    }
+
+    .social {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+    }
+
+    .col {
+      padding-top: 2rem;
+    }
+
+    .section {
+      scroll-margin-top: 2rem;
+    }
+  }
+
+  /* Too short for the profile links as well: they stay in Contact instead of showing a clipped row. */
+  @media (width >= 64rem) and (height < 48rem) {
+    .side {
+      padding-block: 1.5rem 1.25rem;
+    }
+
+    .side .social {
+      display: none;
+    }
+
+    .col {
+      padding-top: 1.5rem;
+    }
+
+    .section {
+      scroll-margin-top: 1.5rem;
+    }
+  }
+
+  /* ——— Below 1024px: a header block on top and the section list as a sticky tab bar ——— */
+
+  @media (width < 64rem) {
+    .page {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* The column's parts join the page, so the tab bar can stick for the whole scroll. */
+    .side {
+      display: contents;
+    }
+
+    .profile,
+    .social,
+    .col {
+      width: 100%;
+      max-width: calc(var(--measure) + 2 * var(--gutter));
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    .profile {
+      order: 1;
+      padding-top: 2.5rem;
+    }
+
+    .social {
+      order: 2;
+      padding-top: 1.25rem;
+      padding-bottom: 2rem;
+    }
+
+    .spy {
+      order: 3;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      box-shadow: inset 0 -1px var(--rule);
+    }
+
+    .spy-track {
+      display: flex;
+      overflow-x: auto;
+      padding-inline: max(var(--gutter), (100% - var(--measure)) / 2);
+      scrollbar-width: none;
+      overscroll-behavior-x: contain;
+    }
+
+    .spy-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .spy-list {
+      display: flex;
+      flex: none;
+      gap: 1.5rem;
+    }
+
+    .spy a {
+      padding-block: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    .spy a:focus-visible {
+      outline-offset: -2px;
+    }
+
+    .spy-bar {
+      top: auto;
+      bottom: 0;
+      width: var(--spy-w, 0);
+      height: 2px;
+      transform: translateX(var(--spy-x, 0));
+    }
+
+    .col {
+      order: 4;
+      padding-block: 2.5rem 2rem;
+    }
+
+    @media (width >= 40rem) {
+      .social {
+        display: flex;
+        flex-wrap: wrap;
+      }
+    }
+
+    /* Phones: the tabs span the content width, which fits all five from about 354px; narrower screens scroll the bar. */
+    @media (width < 30rem) {
+      .spy-list {
+        flex: 1 0 auto;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .spy a {
+        font-size: 0.875rem;
+      }
+    }
+
+    /* Clear the tab bar when a section is jumped to. */
+    .section {
+      scroll-margin-top: 4.5rem;
+    }
+
+    .section + .section {
+      margin-top: 3rem;
+    }
+
+    .button {
+      min-height: 44px;
+    }
+  }
+
+  /* ——— Print: one column, every role expanded, no navigation ——— */
+
+  @media print {
+    body {
+      background: #ffffff;
+    }
+
+    .spy,
+    .actions,
+    .social,
+    .copy {
+      display: none !important;
+    }
+
+    .profile,
+    .social,
+    .col {
+      max-width: none;
+      padding-inline: 0;
+    }
+
+    .job::details-content {
+      content-visibility: visible;
+    }
+
+    .job > summary {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'company dates'
+        'role dur';
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+
+    .job-chevron {
+      display: none;
+    }
+
+    .result,
+    .job,
+    .pair {
+      break-inside: avoid;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
       animation: none !important;
       transition: none !important;
-    }
-  }
-
-  /* ——— Print: the sheet becomes the pages, and the band bleeds off the edge ——— */
-
-  @page {
-    size: A4;
-    margin: 0;
-  }
-
-  @media print {
-    :root {
-      --desk: #ffffff;
-      --paper: #ffffff;
-      --side: #10263a;
-      --on-side: #eef2f7;
-      --on-side-muted: #a9b6c6;
-      --ink: #18202a;
-      --muted: #5b6573;
-      --rule: #e1e5ea;
-      --accent: #1e7bd8;
-      --accent-ink: #1868b8;
-      --on-accent: #ffffff;
-      color-scheme: light;
-      print-color-adjust: exact;
-      -webkit-print-color-adjust: exact;
-    }
-
-    body {
-      background: #ffffff;
-    }
-
-    .bar,
-    .sr-only {
-      display: none !important;
-    }
-
-    .sheet {
-      width: 210mm;
-      max-width: none;
-      min-height: 0;
-      margin: 0;
-      background: none;
-      box-shadow: none;
-    }
-
-    /* With no page margin, each page's top and bottom space is the columns' own padding, which clone repeats
-       on every page. The negative margin cancels that padding on the first page, below the name. */
-    .side,
-    .body {
-      margin-top: calc(-1 * var(--pad-top));
-      padding-top: var(--pad-top);
-      -webkit-box-decoration-break: clone;
-      box-decoration-break: clone;
-    }
-
-    /* The band cells end with the content, so a fixed box paints the band too: fixed boxes repeat on every
-       printed page, which takes the band to the bottom of the last page. */
-    .sheet::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      z-index: -1;
-      width: var(--side-w);
-      background: var(--side);
-    }
-
-    .sheet a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    h2,
-    h3,
-    .job-head {
-      break-after: avoid;
-    }
-
-    .job,
-    .result,
-    .pair,
-    .skill,
-    .s-brief,
-    .head {
-      break-inside: avoid;
     }
   }
 </style>

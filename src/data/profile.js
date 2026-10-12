@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Главное о вас: имя и роль, ключевые поля (стаж, домены, город, формат работы),
+ * Главное о вас: имя, роль, вводная фраза, ключевые поля (домены, город, формат работы),
  * контакты, образование, языки и мета-теги страницы.
  *
  * @typedef {object} Field
@@ -18,15 +18,18 @@ export const profile = {
   name: 'Maksat Batyrov',
   role: 'Senior Frontend Engineer',
 
-  // Начало карьеры в формате 'YYYY-MM' — из него считается стаж («6+ years»).
+  // Одна фраза под именем в левой колонке.
+  intro: 'I build fast, real-time React interfaces: browser extensions, trading dashboards and AI tools.',
+
+  // Начало карьеры в формате 'YYYY-MM' — из него считается стаж («6+ years») в левой колонке.
   careerStart: '2019-12',
 
-  // Часовой пояс: из него берётся смещение «UTC+6» рядом с городом.
+  // Часовой пояс для живых часов рядом с городом («14:32 local time (UTC+6)»).
   timezone: 'Asia/Bishkek',
 
   /**
-   * Ключевые поля. Experience и Domains собирают абзац «Profile»,
-   * Based in и Works выводятся в блоке контактов. @type {Field[]}
+   * Ключевые поля. Based in и Works выводятся в левой колонке,
+   * Domains — чипами в разделе Overview (через запятую). @type {Field[]}
    */
   fields: [
     { label: 'Role', value: 'Senior Frontend Engineer' },
@@ -36,12 +39,12 @@ export const profile = {
     { label: 'Works', value: 'Remote' },
   ],
 
-  // Файл лежит в /public. Поставьте null, чтобы убрать кнопку «Download original PDF».
+  // Файл лежит в /public. Поставьте null, чтобы убрать кнопку «Download CV (PDF)» и строку CV в контактах.
   cv: '/maksat-batyrov-cv.pdf',
 
   /**
-   * Контакты. В сайдбаре показываются Email, Telegram, LinkedIn и GitHub;
-   * остальные ссылки хранятся здесь на будущее. @type {Link[]}
+   * Контакты: все выводятся в разделе Contact, а все, кроме email, — ещё и внизу левой колонки.
+   * Email нужен для кнопок «Email me» и «Copy email». @type {Link[]}
    */
   links: [
     { label: 'Email', value: 'veyronmclord@gmail.com', href: 'mailto:veyronmclord@gmail.com' },
@@ -54,7 +57,7 @@ export const profile = {
     // { label: 'Phone', value: '+996 703 060 241', href: 'tel:+996703060241' },
   ],
 
-  /** Образование и языки: отдельные блоки в сайдбаре. Части через запятую идут отдельными строками. @type {Field[]} */
+  /** Образование и языки: раздел «Education and languages» после навыков. @type {Field[]} */
   background: [
     { label: 'Education', value: 'BSc in Computer Science, Kyrgyz State Technical University' },
     { label: 'Languages', value: 'English (C1), Russian (fluent)' },
