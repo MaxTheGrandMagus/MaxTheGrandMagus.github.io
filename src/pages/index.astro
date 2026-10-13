@@ -205,7 +205,7 @@ const year = new Date().getFullYear();
             latest && (
               <div class="now">
                 <div class="now-head">
-                  <h3 class="now-label">{isCurrent ? 'Now' : 'Latest role'}</h3>
+                  <h3 class:list={['now-label', { 'is-live': isCurrent }]}>{isCurrent ? 'Now' : 'Latest role'}</h3>
                   <p class="now-since num">
                     {isCurrent ? (
                       <>
@@ -394,6 +394,8 @@ const year = new Date().getFullYear();
 
 <script>
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Animations run only when the visitor hasn't asked the system to reduce motion.
+  const moving = () => !reduce.matches;
 
   /* ——— Light/dark switch: follows the system until the visitor picks a side; the choice is remembered ——— */
 
@@ -417,13 +419,32 @@ const year = new Date().getFullYear();
 
     schemeToggle.addEventListener('click', () => {
       const next = current() === 'dark' ? 'light' : 'dark';
-      root.dataset.scheme = next;
-      try {
-        localStorage.setItem('scheme', next);
-      } catch {
-        // Private mode: the switch still works for this visit.
-      }
-      sync();
+      const apply = () => {
+        root.dataset.scheme = next;
+        try {
+          localStorage.setItem('scheme', next);
+        } catch {
+          // Private mode: the switch still works for this visit.
+        }
+        sync();
+      };
+
+      // The new theme spreads from the button as a growing circle (View Transitions); elsewhere it just switches.
+      if (!moving() || !document.startViewTransition || document.visibilityState !== 'visible') return apply();
+      const box = schemeToggle.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const y = box.top + box.height / 2;
+      const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+      document
+        .startViewTransition(apply)
+        .ready.then(() => {
+          root.animate(
+            { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+            { duration: 560, easing: 'cubic-bezier(0.2, 0, 0, 1)', pseudoElement: '::view-transition-new(root)' },
+          );
+        })
+        // An aborted transition (e.g. the tab got hidden) still switches the theme, just without the circle.
+        .catch(() => {});
     });
 
     systemDark.addEventListener('change', sync);
@@ -443,11 +464,26 @@ const year = new Date().getFullYear();
         hourCycle: 'h23',
       });
       const offset = clock.textContent?.trim() ?? '';
+      const suffix = ` local time${offset ? ` (${offset})` : ''}`;
+      let last = '';
       const tick = () => {
-        clock.textContent = `${format.format(new Date())} local time${offset ? ` (${offset})` : ''}`;
+        const time = format.format(new Date());
+        if (time === last) return;
+        if (!moving()) {
+          clock.textContent = time + suffix;
+        } else {
+          // The colon blinks, and the minutes roll in when they change.
+          const [hh, mm] = time.split(':');
+          const rolled = last !== '' && last.slice(3) !== mm;
+          clock.innerHTML =
+            `<span class="clock-time" aria-hidden="true">${hh}<span class="clock-colon">:</span>` +
+            `<span class="clock-min${rolled ? ' is-rolling' : ''}">${mm}</span></span>` +
+            `<span class="sr-only">${time}</span>${suffix}`;
+        }
+        last = time;
       };
       tick();
-      window.setInterval(tick, 30_000);
+      window.setInterval(tick, 1000);
     } catch {
       // An unknown time zone keeps the UTC offset.
     }
@@ -592,6 +628,101 @@ const year = new Date().getFullYear();
         announce('Could not copy the email');
       }
     });
+  }
+
+  /* ——— Results: as each one scrolls into view, the old value gets struck through and the new one counts ——— */
+
+  if (moving() && 'IntersectionObserver' in window) {
+    const seconds = /** @type {Record<string, number>} */ ({ s: 1, min: 60, h: 3600 });
+    const parse = (/** @type {string} */ text) => {
+      const m = text.trim().match(/^(\d+(?:\.\d+)?)(\s*)(%|×|s|min|h)?$/);
+      return m ? { n: Number(m[1]), gap: m[2], unit: m[3] ?? '', decimals: (m[1].split('.')[1] ?? '').length } : null;
+    };
+    const ease = (/** @type {number} */ t) => 1 - (1 - t) ** 3;
+    /** @type {WeakMap<Element, () => void>} */
+    const counters = new WeakMap();
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.unobserve(entry.target);
+          entry.target.classList.add('is-in');
+          const count = counters.get(entry.target);
+          if (count) window.setTimeout(count, 220);
+        }
+      },
+      { threshold: 0.5 },
+    );
+
+    document.querySelectorAll('.result').forEach((result) => {
+      const after = result.querySelector('.r-after');
+      const node = after && [...after.childNodes].reverse().find((n) => n.nodeType === 3 && n.textContent?.trim());
+      if (!after || !node) return;
+      result.classList.add('is-animated');
+
+      const final = node.textContent?.trim() ?? '';
+      const to = parse(final);
+      const before = parse(result.querySelector('.r-before s')?.textContent ?? '');
+
+      // Where the count starts: the old value in the new unit, 0 for percentages, 1 for multipliers.
+      let from = null;
+      if (to && before && to.unit in seconds && before.unit in seconds) {
+        from = (before.n * seconds[before.unit]) / seconds[to.unit];
+      } else if (to?.unit === '%') from = 0;
+      else if (to?.unit === '×') from = 1;
+
+      if (to && from !== null) {
+        // Screen readers and print keep the final value; the counting copy is decorative.
+        const finalCopy = document.createElement('span');
+        finalCopy.className = 'sr-only count-final';
+        finalCopy.textContent = final;
+        const shown = document.createElement('span');
+        shown.className = 'count';
+        shown.setAttribute('aria-hidden', 'true');
+        const format = (/** @type {number} */ v) => `${v.toFixed(to.decimals)}${to.gap}${to.unit}`;
+        shown.textContent = format(from);
+        node.replaceWith(finalCopy, shown);
+
+        counters.set(result, () => {
+          const start = performance.now();
+          const step = (/** @type {number} */ now) => {
+            const t = Math.min(1, (now - start) / 1100);
+            shown.textContent = t < 1 ? format(from + (to.n - from) * ease(t)) : final;
+            if (t < 1) requestAnimationFrame(step);
+          };
+          requestAnimationFrame(step);
+        });
+      } else {
+        after.classList.add('is-waiting'); // Words ("Vue 3", "minutes") fade in after the strike instead.
+      }
+      io.observe(result);
+    });
+  }
+
+  /* ——— Blocks below the fold rise in as they scroll into view ——— */
+
+  if (moving() && 'IntersectionObserver' in window) {
+    const blocks = [
+      ...document.querySelectorAll('.section > h2, .now, .domains, .result, .jobs > li, .skills > .pair, .rows > .row'),
+    ].filter((el) => el.getBoundingClientRect().top > innerHeight * 0.95);
+    blocks.forEach((el) => el.classList.add('is-hidden'));
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries
+          .filter((e) => e.isIntersecting)
+          .forEach((e, i) => {
+            const el = /** @type {HTMLElement} */ (e.target);
+            el.style.transitionDelay = `${i * 60}ms`;
+            el.classList.add('is-shown');
+            io.unobserve(el);
+          });
+      },
+      // No negative bottom margin: blocks at the very end of the page must reveal even when it can't scroll further.
+      { threshold: 0.08 },
+    );
+    blocks.forEach((el) => io.observe(el));
   }
 </script>
 
@@ -1574,9 +1705,278 @@ const year = new Date().getFullYear();
     }
   }
 
+  /* ——— Motion ———
+     One entrance on load, results that count, blocks that rise in as they scroll into view, a live clock and
+     controls that answer the visitor. Screen only, and off when the system asks to reduce motion.
+     The theme switch also animates: the script grows the new theme in a circle from the button. */
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  @media screen and (prefers-reduced-motion: no-preference) {
+    /* Entrance: the left column top to bottom, then the Overview. */
+    /* "backwards": hidden until each step starts, then the normal styles (hover lifts) take over again. */
+    :is(.profile-top, .profile > h1, .role, .intro, .facts, .actions, .spy, .social, #overview > *) {
+      animation: rise 0.7s var(--ease) backwards;
+      animation-delay: calc(var(--step, 0) * 70ms + 80ms);
+    }
+
+    .avatar {
+      animation: pop 0.7s var(--ease) backwards;
+    }
+
+    .profile > h1 {
+      --step: 1;
+    }
+
+    .role,
+    #overview > :nth-child(1) {
+      --step: 2;
+    }
+
+    .intro,
+    #overview > :nth-child(2) {
+      --step: 3;
+    }
+
+    .facts,
+    #overview > :nth-child(3) {
+      --step: 4;
+    }
+
+    .actions {
+      --step: 5;
+    }
+
+    .spy {
+      --step: 6;
+    }
+
+    .social {
+      --step: 7;
+    }
+
+    /* Results: the strike draws across the old value, then the new one counts (the script adds the classes). */
+    .result.is-animated .r-before s {
+      position: relative;
+      text-decoration: none;
+    }
+
+    .result.is-animated .r-before s::after {
+      content: '';
+      position: absolute;
+      top: 54%;
+      right: -2px;
+      left: -2px;
+      height: 1.5px;
+      border-radius: 1px;
+      background: currentColor;
+      scale: 0 1;
+      transform-origin: left center;
+      transition: scale 0.45s var(--ease);
+    }
+
+    .result.is-animated.is-in .r-before s::after {
+      scale: 1 1;
+    }
+
+    .r-after.is-waiting {
+      transition:
+        opacity 0.5s var(--ease) 0.3s,
+        translate 0.5s var(--ease) 0.3s;
+    }
+
+    .result:not(.is-in) .r-after.is-waiting {
+      opacity: 0;
+      translate: 0 6px;
+    }
+
+    /* Blocks below the fold rise in as they scroll into view (the script marks them). */
+    .is-hidden {
+      transition:
+        opacity 0.6s var(--ease),
+        translate 0.6s var(--ease);
+    }
+
+    .is-hidden:not(.is-shown) {
+      opacity: 0;
+      translate: 0 18px;
+    }
+
+    /* Controls that answer the visitor. */
+    :root {
+      interpolate-size: allow-keywords;
+    }
+
+    .job::details-content {
+      block-size: 0;
+      overflow: clip;
+      opacity: 0;
+      transition:
+        block-size 0.38s var(--ease),
+        opacity 0.3s var(--ease),
+        content-visibility 0.38s allow-discrete;
+    }
+
+    .job[open]::details-content {
+      block-size: auto;
+      opacity: 1;
+    }
+
+    .job > summary {
+      transition: background-color 0.15s;
+    }
+
+    .button {
+      transition:
+        background-color 0.15s,
+        scale 0.12s var(--ease);
+    }
+
+    .button:active,
+    .scheme-toggle:active {
+      scale: 0.96;
+    }
+
+    /* The icon that appears after a switch turns into place. */
+    .scheme-toggle svg {
+      animation: spin-in 0.45s var(--ease);
+    }
+
+    .chip {
+      transition:
+        background-color 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+    }
+
+    .chip:hover {
+      border-color: transparent;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .now {
+      transition:
+        border-color 0.2s,
+        translate 0.25s var(--ease);
+    }
+
+    .now:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--rule));
+      translate: 0 -2px;
+    }
+
+    .social a {
+      background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+      transition:
+        background-size 0.25s var(--ease),
+        color 0.15s;
+    }
+
+    .social a:hover {
+      background-size: 100% 1px;
+    }
+
+    /* The section marker springs to its place. */
+    .spy[data-ready]:not([data-still]) .spy-bar {
+      transition:
+        transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1),
+        width 0.5s cubic-bezier(0.34, 1.4, 0.64, 1),
+        height 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+
+    /* Live details: a pulse next to "Now", a blinking colon and minutes that roll in. */
+    .now-label.is-live::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 0.5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      vertical-align: 0.08em;
+      animation: pulse 2.4s ease-out infinite;
+    }
+
+    .clock-colon {
+      animation: blink 2s steps(1) infinite;
+    }
+
+    .clock-min {
+      display: inline-block;
+    }
+
+    .clock-min.is-rolling {
+      animation: roll 0.5s var(--ease);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.8;
+    }
+  }
+
+  @keyframes spin-in {
+    from {
+      opacity: 0;
+      rotate: -90deg;
+      scale: 0.6;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 8px transparent;
+    }
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  @keyframes roll {
+    from {
+      opacity: 0;
+      translate: 0 -60%;
+    }
+  }
+
   /* ——— Print: one column, every role expanded, no navigation ——— */
 
   @media print {
+    /* A result that hasn't counted yet would print its old value: print the final one instead. */
+    .count {
+      display: none;
+    }
+
+    .count-final {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+    }
+
     body {
       background: #ffffff;
     }
