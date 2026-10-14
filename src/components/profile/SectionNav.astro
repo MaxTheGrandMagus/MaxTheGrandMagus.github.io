@@ -1,0 +1,174 @@
+---
+// The list of sections. In the profile column it marks the section being read with a bar; below 1024px it becomes
+// a sticky tab bar with an underline. Behaviour: scripts/section-nav.js.
+
+/** @type {{ sections: { id: string, title: string }[] }} */
+const { sections } = Astro.props;
+---
+
+<nav class="section-nav" aria-label="On this page" data-section-nav>
+  <div class="track" data-section-nav-track>
+    <ul class="list">
+      {sections.map((section) => (
+        <li>
+          <a href={`#${section.id}`}>{section.title}</a>
+        </li>
+      ))}
+    </ul>
+    <span class="marker" data-section-nav-bar hidden></span>
+  </div>
+</nav>
+
+<script>
+  import { initSectionNav } from '@scripts/section-nav.js';
+
+  const nav = document.querySelector('[data-section-nav]');
+  if (nav instanceof HTMLElement) initSectionNav(nav);
+</script>
+
+<style>
+  .track {
+    position: relative;
+  }
+
+  a {
+    display: block;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+  }
+
+  a:hover,
+  a[aria-current] {
+    color: var(--ink);
+  }
+
+  .marker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--accent);
+    pointer-events: none;
+  }
+
+  /* The script sets data-ready after the first placement, so the marker only slides on later moves. */
+  .section-nav[data-ready]:not([data-still]) .marker {
+    transition:
+      transform 0.28s var(--ease),
+      width 0.28s var(--ease),
+      height 0.28s var(--ease);
+  }
+
+  /* ——— In the profile column: a vertical list with a bar on the left ——— */
+
+  @media (width >= 64rem) {
+    .section-nav {
+      flex: 1 0 auto;
+      margin-top: 2.25rem;
+    }
+
+    .track {
+      border-inline-start: 1px solid var(--rule);
+    }
+
+    a {
+      padding: 0.4375rem 0 0.4375rem 1rem;
+    }
+
+    .marker {
+      left: -1px;
+      width: 2px;
+      height: var(--nav-h, 0);
+      border-radius: 2px;
+      transform: translateY(var(--nav-y, 0));
+    }
+  }
+
+  @media (width >= 64rem) and (height < 55rem) {
+    .section-nav {
+      margin-top: 1.5rem;
+    }
+
+    a {
+      padding-block: 0.3125rem;
+    }
+  }
+
+  /* ——— Below 1024px: a sticky tab bar with an underline ——— */
+
+  @media (width < 64rem) {
+    .section-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      box-shadow: inset 0 -1px var(--rule);
+    }
+
+    .track {
+      display: flex;
+      overflow-x: auto;
+      padding-inline: max(var(--gutter), (100% - var(--measure)) / 2);
+      scrollbar-width: none;
+      overscroll-behavior-x: contain;
+    }
+
+    .track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .list {
+      display: flex;
+      flex: none;
+      gap: 1.5rem;
+    }
+
+    a {
+      padding-block: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    a:focus-visible {
+      outline-offset: -2px;
+    }
+
+    .marker {
+      top: auto;
+      bottom: 0;
+      width: var(--nav-w, 0);
+      height: 2px;
+      transform: translateX(var(--nav-x, 0));
+    }
+  }
+
+  /* Phones: the tabs span the content width, which fits all five from about 354px; narrower screens scroll the bar. */
+  @media (width < 30rem) {
+    .list {
+      flex: 1 0 auto;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    a {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* The marker springs to its place. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .section-nav[data-ready]:not([data-still]) .marker {
+      transition:
+        transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1),
+        width 0.5s cubic-bezier(0.34, 1.4, 0.64, 1),
+        height 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+  }
+
+  @media print {
+    .section-nav {
+      display: none !important;
+    }
+  }
+</style>

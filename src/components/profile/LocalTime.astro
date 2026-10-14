@@ -1,0 +1,47 @@
+---
+// The UTC offset of a time zone, rendered on the server; the script puts the live local time in front of it.
+import { utcOffset } from '@lib/dates.js';
+
+/** @type {{ timeZone: string }} */
+const { timeZone } = Astro.props;
+const offset = utcOffset(timeZone);
+---
+
+{offset && (
+  <>
+    <span class="sr-only">, </span>
+    <span class="clock num" data-local-time data-tz={timeZone}>
+      {offset}
+    </span>
+  </>
+)}
+
+<script>
+  import { initLocalTime } from '@scripts/local-time.js';
+
+  document.querySelectorAll('[data-local-time]').forEach((el) => {
+    if (el instanceof HTMLElement) initLocalTime(el);
+  });
+</script>
+
+<style>
+  .clock {
+    display: block;
+    color: var(--muted);
+  }
+
+  /* The parts below are created by the script, so they are styled through :global(). */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .clock :global(.clock-colon) {
+      animation: blink 2s steps(1) infinite;
+    }
+
+    .clock :global(.clock-min) {
+      display: inline-block;
+    }
+
+    .clock :global(.clock-min.is-rolling) {
+      animation: roll 0.5s var(--ease);
+    }
+  }
+</style>

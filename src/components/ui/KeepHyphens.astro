@@ -1,0 +1,9 @@
+---
+// Renders text with hyphenated words ("form-filling", "real-time") kept on one line.
+import { splitHyphenated } from '@lib/text.js';
+
+/** @type {{ text: string }} */
+const { text } = Astro.props;
+---
+
+{splitHyphenated(text).map((part, i) => (i % 2 ? <span class="nowrap">{part}</span> : part))}

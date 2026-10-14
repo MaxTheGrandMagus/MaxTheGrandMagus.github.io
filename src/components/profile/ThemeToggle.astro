@@ -1,0 +1,78 @@
+---
+// Light/dark switch: the moon offers dark, the sun offers light. Hidden until its script takes over.
+---
+
+<button type="button" class="theme-toggle" aria-label="Dark theme" aria-pressed="false" data-theme-toggle hidden>
+  <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path>
+  </svg>
+  <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"></path>
+  </svg>
+</button>
+
+<script>
+  import { initThemeToggle } from '@scripts/theme-toggle.js';
+
+  const button = document.querySelector('[data-theme-toggle]');
+  if (button instanceof HTMLButtonElement) initThemeToggle(button);
+</script>
+
+<style>
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background-color 0.15s,
+      border-color 0.15s;
+  }
+
+  .theme-toggle:hover {
+    border-color: color-mix(in srgb, var(--muted) 45%, var(--rule));
+    background: var(--panel);
+    color: var(--ink);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .theme-toggle[aria-pressed='true'] .icon-moon,
+  .theme-toggle:not([aria-pressed='true']) .icon-sun {
+    display: none;
+  }
+
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .theme-toggle:active {
+      scale: 0.96;
+    }
+
+    /* The icon that appears after a switch turns into place. */
+    svg {
+      animation: spin-in 0.45s var(--ease);
+    }
+  }
+
+  @media print {
+    .theme-toggle {
+      display: none !important;
+    }
+  }
+</style>

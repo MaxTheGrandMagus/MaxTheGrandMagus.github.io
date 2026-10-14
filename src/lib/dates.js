@@ -36,3 +36,15 @@ export function formatDuration(/** @type {number} */ months) {
 export function yearsSince(/** @type {string} */ start) {
   return Math.floor((nowIndex() - toIndex(start)) / 12);
 }
+
+/** A time zone's current UTC offset: 'Asia/Bishkek' → "UTC+6"; '' for an unknown zone. */
+export function utcOffset(/** @type {string} */ timeZone) {
+  try {
+    const name = new Intl.DateTimeFormat('en', { timeZone, timeZoneName: 'shortOffset' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName')?.value;
+    return name ? name.replace('GMT', 'UTC') : '';
+  } catch {
+    return '';
+  }
+}

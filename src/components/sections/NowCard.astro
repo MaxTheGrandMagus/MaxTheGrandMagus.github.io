@@ -1,0 +1,113 @@
+---
+// The current (or latest) role, as a card at the top of the Overview.
+import KeepHyphens from '@components/ui/KeepHyphens.astro';
+import { formatMonth } from '@lib/dates.js';
+
+/** @type {{ job: import('@data/experience.js').Job }} */
+const { job } = Astro.props;
+const isCurrent = !job.end;
+---
+
+<div class="now" data-reveal>
+  <div class="now-head">
+    <h3 class:list={['now-label', { 'is-live': isCurrent }]}>{isCurrent ? 'Now' : 'Latest role'}</h3>
+    <p class="now-since num">
+      {isCurrent ? (
+        <>
+          Since <time datetime={job.start}>{formatMonth(job.start)}</time>
+        </>
+      ) : (
+        <>
+          <time datetime={job.start}>{formatMonth(job.start)}</time> –{' '}
+          <time datetime={job.end}>{formatMonth(job.end)}</time>
+        </>
+      )}
+    </p>
+  </div>
+  <p class="now-company">{job.company}</p>
+  <p class="now-role">{job.role}</p>
+  <p class="now-summary">
+    <KeepHyphens text={job.summary} />
+  </p>
+</div>
+
+<style>
+  .now {
+    padding: 1.5rem 1.75rem 1.75rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--panel);
+  }
+
+  .now-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .now-label {
+    color: var(--accent);
+    font-size: inherit;
+    font-weight: 600;
+  }
+
+  .now-since {
+    color: var(--muted);
+  }
+
+  .now-company {
+    margin-top: 0.875rem;
+    font-size: 1.375rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .now-role {
+    margin-top: 0.25rem;
+    color: var(--muted);
+  }
+
+  .now-summary {
+    max-width: 62ch;
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  @container content (width < 30rem) {
+    .now {
+      padding: 1.25rem 1.25rem 1.5rem;
+    }
+  }
+
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .now {
+      transition:
+        border-color 0.2s,
+        translate 0.25s var(--ease);
+    }
+
+    .now:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--rule));
+      translate: 0 -2px;
+    }
+
+    /* A live pulse next to "Now" (only for a current role). */
+    .now-label.is-live::before {
+      content: '';
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 0.5rem;
+      border-radius: 50%;
+      background: var(--accent);
+      vertical-align: 0.08em;
+      animation: pulse 2.4s ease-out infinite;
+    }
+  }
+</style>

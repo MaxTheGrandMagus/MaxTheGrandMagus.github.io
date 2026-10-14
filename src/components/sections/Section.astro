@@ -1,0 +1,56 @@
+---
+// A content section with its heading. The id is what the section nav links to.
+
+/** @type {{ id: string, title: string }} */
+const { id, title } = Astro.props;
+---
+
+<section id={id} class="section" aria-labelledby={`${id}-title`}>
+  <h2 id={`${id}-title`} data-reveal>
+    {title}
+  </h2>
+  <slot />
+</section>
+
+<style>
+  /* Matches the column's top padding, so a jump to a section lands at the very top. */
+  .section {
+    scroll-margin-top: 3rem;
+  }
+
+  /* `~` rather than `+`: a component's <script> renders where it is declared, so one can sit between two sections. */
+  .section ~ .section {
+    margin-top: 3.5rem;
+  }
+
+  h2 {
+    margin-bottom: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+
+  @media (width >= 64rem) and (height < 55rem) {
+    .section {
+      scroll-margin-top: 2rem;
+    }
+  }
+
+  @media (width >= 64rem) and (height < 48rem) {
+    .section {
+      scroll-margin-top: 1.5rem;
+    }
+  }
+
+  @media (width < 64rem) {
+    /* Clear the sticky tab bar when a section is jumped to. */
+    .section {
+      scroll-margin-top: 4.5rem;
+    }
+
+    .section ~ .section {
+      margin-top: 3rem;
+    }
+  }
+</style>

@@ -1,0 +1,91 @@
+---
+// Links to profiles (Telegram, LinkedIn, GitHub…) at the bottom of the profile column.
+// Email is left out: the profile header has its own "Email me" link.
+import { emailLink } from '@lib/content.js';
+
+/** @type {{ links: import('@lib/content.js').Link[] }} */
+const { links } = Astro.props;
+
+const email = emailLink(links);
+const profiles = links.filter((link) => link !== email);
+---
+
+<ul class="profile-links" aria-label="Profiles">
+  {profiles.map((link) => (
+    <li>
+      <a href={link.href}>{link.label}</a>
+    </li>
+  ))}
+</ul>
+
+<style>
+  /* Three to a row in narrow columns, so five links break 3 + 2 rather than 4 + 1. */
+  .profile-links {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    gap: 0.25rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  a {
+    display: inline-block;
+    padding-block: 0.125rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: currentColor;
+  }
+
+  @media (width >= 64rem) {
+    .profile-links {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+    }
+  }
+
+  @media (width >= 64rem) and (height < 55rem) {
+    .profile-links {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+    }
+  }
+
+  /* Too short for the links as well: they stay in Contact instead of showing a clipped row. */
+  @media (width >= 64rem) and (height < 48rem) {
+    .profile-links {
+      display: none;
+    }
+  }
+
+  @media (width >= 40rem) and (width < 64rem) {
+    .profile-links {
+      display: flex;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* An underline slides in on hover. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    a {
+      background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+      transition:
+        background-size 0.25s var(--ease),
+        color 0.15s;
+    }
+
+    a:hover {
+      background-size: 100% 1px;
+    }
+  }
+
+  @media print {
+    .profile-links {
+      display: none !important;
+    }
+  }
+</style>

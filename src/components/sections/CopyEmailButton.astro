@@ -1,0 +1,62 @@
+---
+// "Copy email" next to the address in Contact. Hidden until its script confirms the clipboard API.
+
+/** @type {{ address: string }} */
+const { address } = Astro.props;
+---
+
+<button type="button" class="copy" data-copy-email={address} hidden>
+  <span class="copy-label copy-idle">Copy email</span>
+  <span class="copy-label copy-done">Email copied</span>
+</button>
+<span class="sr-only" role="status" aria-live="polite" data-copy-status></span>
+
+<script>
+  import { initCopyEmail } from '@scripts/copy-email.js';
+
+  document.querySelectorAll('[data-copy-email]').forEach((button) => {
+    if (button instanceof HTMLButtonElement) initCopyEmail(button);
+  });
+</script>
+
+<style>
+  .copy {
+    display: inline-grid;
+    justify-items: center;
+    margin-block: -0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+
+  .copy:hover {
+    border-color: color-mix(in srgb, var(--muted) 45%, var(--rule));
+  }
+
+  /* Both labels share one cell, so the button keeps its width when the label swaps. */
+  .copy-label {
+    grid-area: 1 / 1;
+  }
+
+  .copy-done,
+  .copy[data-done] .copy-idle {
+    visibility: hidden;
+  }
+
+  .copy[data-done] .copy-done {
+    visibility: visible;
+  }
+
+  @media print {
+    .copy {
+      display: none !important;
+    }
+  }
+</style>

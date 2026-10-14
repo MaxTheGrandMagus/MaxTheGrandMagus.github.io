@@ -1,0 +1,32 @@
+---
+// Skills: one labelled row of chips per group.
+import ChipList from '@components/ui/ChipList.astro';
+import Section from './Section.astro';
+
+/** @type {{ id: string, title: string, groups: import('@data/skills.js').SkillGroup[] }} */
+const { id, title, groups } = Astro.props;
+---
+
+<Section id={id} title={title}>
+  <div class="skills">
+    {groups.map((group) => (
+      <div class="pair" data-reveal>
+        <h3 class="label">{group.group}</h3>
+        <ChipList items={group.items} />
+      </div>
+    ))}
+  </div>
+</Section>
+
+<style>
+  .skills {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @container content (width >= 30rem) {
+    .skills {
+      gap: 0.75rem;
+    }
+  }
+</style>

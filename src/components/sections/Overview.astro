@@ -1,0 +1,32 @@
+---
+// Overview: the current role and the domains worked in.
+import ChipList from '@components/ui/ChipList.astro';
+import NowCard from './NowCard.astro';
+import Section from './Section.astro';
+
+/**
+ * @type {{
+ *   id: string,
+ *   title: string,
+ *   job?: import('@data/experience.js').Job,
+ *   domains?: string[],
+ * }}
+ */
+const { id, title, job, domains = [] } = Astro.props;
+---
+
+<Section id={id} title={title}>
+  {job && <NowCard job={job} />}
+  {domains.length > 0 && (
+    <div class="pair domains" data-reveal>
+      <h3 class="label">Domains</h3>
+      <ChipList items={domains} />
+    </div>
+  )}
+</Section>
+
+<style>
+  .domains {
+    margin-top: 1.5rem;
+  }
+</style>

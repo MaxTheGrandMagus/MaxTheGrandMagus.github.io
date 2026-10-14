@@ -1,0 +1,22 @@
+---
+// The page footer. data-section-nav-end lets the section nav select the last section when the page ends.
+
+/** @type {{ name: string }} */
+const { name } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer" data-section-nav-end>
+  <p>
+    © {year} {name}
+  </p>
+</footer>
+
+<style>
+  .site-footer {
+    max-width: var(--measure);
+    margin-top: 4rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+</style>

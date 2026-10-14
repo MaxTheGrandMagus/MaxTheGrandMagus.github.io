@@ -1,0 +1,56 @@
+/* Design tokens: colours for the light and dark themes, type and layout sizes. Every component reads these. */
+
+:root {
+  /* Colours (light) */
+  --bg: #fafafa;
+  --panel: #ffffff;
+  --ink: #0f1115;
+  --muted: #5c6370;
+  --rule: #e7e8eb;
+  --accent: #2f6feb;
+  --accent-soft: #eaf1fe;
+
+  /* Type and layout */
+  --font: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --side: 23rem; /* the profile column from 1024px */
+  --measure: 44rem; /* the content column */
+  --gutter: clamp(1rem, 5vw, 1.5rem);
+  --label: 9rem; /* the label column in .pair rows */
+  --radius: 12px;
+  --radius-sm: 6px;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  color-scheme: light dark;
+}
+
+/* Dark colours come from the system setting unless the visitor picked light with the switch, or from the switch
+   itself (html[data-scheme], see scripts/theme-toggle.js). Screen only, so a printout always gets the light colours.
+   The two dark blocks hold the same values: keep them in sync. */
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-scheme='light']) {
+    --bg: #0d0e10;
+    --panel: #141518;
+    --ink: #edeef0;
+    --muted: #9aa0aa;
+    --rule: #24262b;
+    --accent: #6ea0ff;
+    --accent-soft: #16213a;
+  }
+}
+
+@media screen {
+  :root[data-scheme='dark'] {
+    --bg: #0d0e10;
+    --panel: #141518;
+    --ink: #edeef0;
+    --muted: #9aa0aa;
+    --rule: #24262b;
+    --accent: #6ea0ff;
+    --accent-soft: #16213a;
+    color-scheme: dark;
+  }
+}
+
+:root[data-scheme='light'] {
+  color-scheme: light;
+}

@@ -1,0 +1,44 @@
+/* Content patterns shared by several sections (Overview, Skills, Education and languages, Contact). */
+
+/* Small muted labels: "Domains", skill groups, contact names. */
+.label {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* A label and its content side by side; in a narrow column the label goes on top. */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.375rem;
+}
+
+@container content (width >= 30rem) {
+  .pair {
+    grid-template-columns: var(--label) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: baseline;
+  }
+}
+
+/* Hairline rows: Education and languages, Contact. */
+.rows {
+  border-bottom: 1px solid var(--rule);
+}
+
+.row {
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.row dd {
+  font-size: 0.9375rem;
+}
+
+@media print {
+  .pair {
+    break-inside: avoid;
+  }
+}

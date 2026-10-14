@@ -1,0 +1,217 @@
+---
+// One role in Experience: company, role and dates in the summary; the description, highlights and stack open below.
+import ChipList from '@components/ui/ChipList.astro';
+import KeepHyphens from '@components/ui/KeepHyphens.astro';
+import { formatDuration, formatMonth, monthsBetween } from '@lib/dates.js';
+
+/** @type {{ job: import('@data/experience.js').Job }} */
+const { job } = Astro.props;
+const duration = formatDuration(monthsBetween(job.start, job.end));
+---
+
+<details class="job">
+  <summary>
+    {/* The sr-only commas keep the disclosure's accessible name from running together. */}
+    <span class="job-company">{job.company}</span>
+    <span class="job-role">
+      <span class="sr-only">, </span>
+      {job.role}
+    </span>
+    <span class="job-meta num">
+      <span class="job-dates">
+        <span class="sr-only">, </span>
+        <time datetime={job.start}>{formatMonth(job.start)}</time> –{' '}
+        {job.end ? <time datetime={job.end}>{formatMonth(job.end)}</time> : 'Present'}
+      </span>
+      <span class="job-sep">, </span>
+      <span class="job-dur">{duration}</span>
+    </span>
+    <svg class="job-chevron" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+      <path
+        d="M4 6l4 4 4-4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      ></path>
+    </svg>
+  </summary>
+  <div class="job-body">
+    <p>
+      <KeepHyphens text={job.summary} />
+    </p>
+    <ul class="job-highlights">
+      {job.highlights.map((highlight) => (
+        <li>
+          <KeepHyphens text={highlight} />
+        </li>
+      ))}
+    </ul>
+    {job.stack && <ChipList items={job.stack} label="Stack" />}
+  </div>
+</details>
+
+<style>
+  .job > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 1rem;
+    grid-template-areas:
+      'company icon'
+      'role icon'
+      'meta icon';
+    column-gap: 1rem;
+    align-items: baseline;
+    margin-inline: -0.75rem;
+    padding: 0.875rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .job > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .job > summary:hover {
+    background: var(--panel);
+  }
+
+  .job > summary:focus-visible {
+    outline-offset: 0;
+  }
+
+  .job-company {
+    grid-area: company;
+    font-weight: 600;
+  }
+
+  .job-role {
+    grid-area: role;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .job-meta {
+    grid-area: meta;
+    margin-top: 0.125rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .job-chevron {
+    grid-area: icon;
+    align-self: center;
+    color: var(--muted);
+    transition: rotate 0.2s var(--ease);
+  }
+
+  .job[open] .job-chevron {
+    rotate: 180deg;
+  }
+
+  /* Wide enough: dates and duration move to a right-hand column. */
+  @container content (width >= 34rem) {
+    .job > summary {
+      grid-template-columns: minmax(0, 1fr) auto 1rem;
+      grid-template-areas:
+        'company dates icon'
+        'role dur icon';
+    }
+
+    .job-meta {
+      display: contents;
+    }
+
+    .job-dates {
+      grid-area: dates;
+      color: var(--ink);
+      text-align: end;
+    }
+
+    .job-dur {
+      grid-area: dur;
+      text-align: end;
+    }
+
+    .job-sep {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+
+  .job-body {
+    display: grid;
+    gap: 1rem;
+    max-width: 68ch;
+    padding: 0.25rem 0 1.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .job-highlights {
+    display: grid;
+    gap: 0.375rem;
+    padding-left: 1.125rem;
+    list-style: disc;
+  }
+
+  .job-highlights li {
+    padding-left: 0.25rem;
+    text-wrap: pretty;
+  }
+
+  .job-highlights li::marker {
+    color: var(--muted);
+  }
+
+  /* The row opens smoothly (interpolate-size is enabled in styles/motion.css). */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .job::details-content {
+      block-size: 0;
+      overflow: clip;
+      opacity: 0;
+      transition:
+        block-size 0.38s var(--ease),
+        opacity 0.3s var(--ease),
+        content-visibility 0.38s allow-discrete;
+    }
+
+    .job[open]::details-content {
+      block-size: auto;
+      opacity: 1;
+    }
+
+    .job > summary {
+      transition: background-color 0.15s;
+    }
+  }
+
+  /* Print: every role open, no chevron. */
+  @media print {
+    .job {
+      break-inside: avoid;
+    }
+
+    .job::details-content {
+      content-visibility: visible;
+    }
+
+    .job > summary {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'company dates'
+        'role dur';
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+
+    .job-chevron {
+      display: none;
+    }
+  }
+</style>

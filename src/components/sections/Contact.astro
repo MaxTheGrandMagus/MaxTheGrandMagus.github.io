@@ -1,0 +1,53 @@
+---
+// Contact: every link as a hairline row, plus the CV. The email row also has a "Copy email" button.
+import { emailAddress, emailLink } from '@lib/content.js';
+import CopyEmailButton from './CopyEmailButton.astro';
+import Section from './Section.astro';
+
+/**
+ * @type {{
+ *   id: string,
+ *   title: string,
+ *   links: import('@lib/content.js').Link[],
+ *   cv?: string | null,
+ * }}
+ */
+const { id, title, links, cv } = Astro.props;
+
+const email = emailLink(links);
+const address = emailAddress(email);
+const rows = [
+  ...links.map((link) => ({ ...link, download: false, copy: link === email })),
+  ...(cv ? [{ label: 'CV', value: 'Download PDF', href: cv, download: true, copy: false }] : []),
+];
+---
+
+<Section id={id} title={title}>
+  <dl class="rows">
+    {rows.map((row) => (
+      <div class="pair row" data-reveal>
+        <dt class="label">{row.label}</dt>
+        <dd class="row-value">
+          <a href={row.href} download={row.download || undefined}>
+            {row.value}
+          </a>
+          {row.copy && address && <CopyEmailButton address={address} />}
+        </dd>
+      </div>
+    ))}
+  </dl>
+</Section>
+
+<style>
+  .row-value {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+
+  .row-value a {
+    overflow-wrap: anywhere;
+  }
+</style>

@@ -1,0 +1,48 @@
+---
+// The document shell: <html>, <head> with meta tags, the font and the global styles, and <body>.
+import '@fontsource-variable/dm-sans/opsz.css';
+import '@styles/tokens.css';
+import '@styles/base.css';
+import '@styles/content.css';
+import '@styles/layout.css';
+import '@styles/motion.css';
+
+/** @type {{ title: string, description: string }} */
+const { title, description } = Astro.props;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <meta property="og:url" content={canonical} />}
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- The browser bar takes the page background: --bg in styles/tokens.css. -->
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)" />
+    <!-- Applies the visitor's saved light/dark choice before the first paint, so the page never flashes.
+         The key is shared with scripts/theme-toggle.js. -->
+    <script is:inline>
+      try {
+        const scheme = localStorage.getItem('scheme');
+        if (scheme === 'light' || scheme === 'dark') document.documentElement.dataset.scheme = scheme;
+      } catch {
+        // Storage is blocked: the page follows the system setting.
+      }
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

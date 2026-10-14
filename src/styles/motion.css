@@ -1,0 +1,126 @@
+/* Motion shared across components: the entrance sequence on load and blocks that rise in as they scroll into view.
+   Motion that belongs to one component (counting results, the live clock, press feedback, the theme switch circle)
+   lives in that component. Screen only, and nothing moves when the system asks to reduce motion. */
+
+/* The theme switch grows the new theme in a circle (scripts/theme-toggle.js), so no default cross-fade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  /* Lets elements animate to and from `auto` sizes (the experience rows open smoothly). */
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  /* Entrance: the profile column top to bottom, then the Overview, one step every 70ms.
+     "backwards": hidden until a step starts, then the normal styles (hover lifts) take over again. */
+  :is(.profile-top, .profile > h1, .role, .intro, .facts, .actions, .section-nav, .profile-links, #overview > *) {
+    animation: rise 0.7s var(--ease) backwards;
+    animation-delay: calc(var(--step, 0) * 70ms + 80ms);
+  }
+
+  .avatar {
+    animation: pop 0.7s var(--ease) backwards;
+  }
+
+  .profile > h1 {
+    --step: 1;
+  }
+
+  .role,
+  #overview > :nth-child(1) {
+    --step: 2;
+  }
+
+  .intro,
+  #overview > :nth-child(2) {
+    --step: 3;
+  }
+
+  .facts,
+  #overview > :nth-child(3) {
+    --step: 4;
+  }
+
+  .actions {
+    --step: 5;
+  }
+
+  .section-nav {
+    --step: 6;
+  }
+
+  .profile-links {
+    --step: 7;
+  }
+
+  /* Rise in on scroll: scripts/reveal.js marks the [data-reveal] blocks below the fold. */
+  .is-hidden {
+    transition:
+      opacity 0.6s var(--ease),
+      translate 0.6s var(--ease);
+  }
+
+  .is-hidden:not(.is-shown) {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@keyframes spin-in {
+  from {
+    opacity: 0;
+    rotate: -90deg;
+    scale: 0.6;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes roll {
+  from {
+    opacity: 0;
+    translate: 0 -60%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,28 @@
+---
+// Experience: one expandable row per role, newest first.
+import JobItem from './JobItem.astro';
+import Section from './Section.astro';
+
+/** @type {{ id: string, title: string, jobs: import('@data/experience.js').Job[] }} */
+const { id, title, jobs } = Astro.props;
+---
+
+<Section id={id} title={title}>
+  <ol class="jobs" role="list">
+    {jobs.map((job) => (
+      <li data-reveal>
+        <JobItem job={job} />
+      </li>
+    ))}
+  </ol>
+</Section>
+
+<style>
+  .jobs {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .jobs > li {
+    border-top: 1px solid var(--rule);
+  }
+</style>

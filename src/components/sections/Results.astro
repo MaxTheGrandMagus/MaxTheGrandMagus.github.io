@@ -1,0 +1,159 @@
+---
+// Results as "was / now" pairs in two columns. As each one scrolls into view, the old value gets struck through and
+// the new one counts (scripts/count-up.js).
+import KeepHyphens from '@components/ui/KeepHyphens.astro';
+import Section from './Section.astro';
+
+/** @type {{ id: string, title: string, items: import('@data/results.js').Result[] }} */
+const { id, title, items } = Astro.props;
+
+// "Autofill engine at HirePilot", or just the company.
+const source = (/** @type {import('@data/results.js').Result} */ result) =>
+  result.project ? `${result.project} at ${result.company}` : result.company;
+---
+
+<Section id={id} title={title}>
+  <ul class="results" role="list">
+    {items.map((result) => (
+      <li class="result" data-reveal data-count-up>
+        {result.before && (
+          <p class="result-before num">
+            <span class="sr-only">Before: </span>
+            <s data-before>{result.before}</s>
+          </p>
+        )}
+        <p class="result-after num" data-after>
+          {result.before && <span class="sr-only">After: </span>}
+          {result.after}
+        </p>
+        <p class="result-what">
+          <KeepHyphens text={result.what} />
+        </p>
+        <p class="result-source">{source(result)}</p>
+      </li>
+    ))}
+  </ul>
+</Section>
+
+<script>
+  import { initCountUp } from '@scripts/count-up.js';
+
+  initCountUp(document.querySelectorAll('[data-count-up]'));
+</script>
+
+<style>
+  /* Hairline rows in two columns; subgrid lines up the numbers across a row. */
+  .results {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 2.5rem;
+  }
+
+  @container content (width >= 34rem) {
+    .results {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .result {
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    padding-block: 1rem 1.375rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .result-before {
+    grid-row: 1;
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .result-before s {
+    text-decoration-thickness: 1px;
+  }
+
+  .result-after {
+    grid-row: 2;
+    font-size: 1.75rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .result-what {
+    grid-row: 3;
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .result-source {
+    grid-row: 4;
+    align-self: end;
+    margin-top: 0.75rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+  }
+
+  /* The script adds .is-animated to results it animates and .is-in once one is on screen. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .result.is-animated .result-before s {
+      position: relative;
+      text-decoration: none;
+    }
+
+    .result.is-animated .result-before s::after {
+      content: '';
+      position: absolute;
+      top: 54%;
+      right: -2px;
+      left: -2px;
+      height: 1.5px;
+      border-radius: 1px;
+      background: currentColor;
+      scale: 0 1;
+      transform-origin: left center;
+      transition: scale 0.45s var(--ease);
+    }
+
+    .result.is-animated.is-in .result-before s::after {
+      scale: 1 1;
+    }
+
+    /* Words ("Vue 3", "minutes") fade in after the strike instead of counting. */
+    .result-after.is-waiting {
+      transition:
+        opacity 0.5s var(--ease) 0.3s,
+        translate 0.5s var(--ease) 0.3s;
+    }
+
+    .result:not(.is-in) .result-after.is-waiting {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+
+  @media print {
+    .result {
+      break-inside: avoid;
+    }
+
+    /* A result that hasn't counted yet would print its old value, so print the final one (made by the script). */
+    .result-after :global(.count) {
+      display: none;
+    }
+
+    .result-after :global(.count-final) {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+    }
+  }
+</style>

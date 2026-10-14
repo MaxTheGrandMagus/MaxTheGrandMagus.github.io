@@ -1,0 +1,18 @@
+---
+// Education and languages, as hairline rows.
+import Section from './Section.astro';
+
+/** @type {{ id: string, title: string, rows: { label: string, value: string }[] }} */
+const { id, title, rows } = Astro.props;
+---
+
+<Section id={id} title={title}>
+  <dl class="rows">
+    {rows.map((row) => (
+      <div class="pair row" data-reveal>
+        <dt class="label">{row.label}</dt>
+        <dd>{row.value}</dd>
+      </div>
+    ))}
+  </dl>
+</Section>

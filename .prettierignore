@@ -1,0 +1,3 @@
+# Besides .gitignore (dist, .astro, node_modules):
+legacy/
+package-lock.json
